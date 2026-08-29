@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#04331C">
+<title>Cómo usar la app · Exhibe y Gana</title>
+<style>
+:root{
+  --verde:#00843D; --verde-osc:#00552A; --verde-prof:#04331C;
+  --lima:#A6CE39; --carbon:#16211C; --gris:#5F7169;
+  --linea:#DCE5DF; --fondo:#F2F6F2; --vino:#A62828; --ambar:#E9A400;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+body{background:var(--verde-prof);color:#fff;min-height:100vh;overflow-x:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:460px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;
+  padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+
+/* ---------- cabecera ---------- */
+.cab{padding:14px 0 10px;display:flex;align-items:center;gap:10px}
+.mk{font-size:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:800;color:var(--lima);
+  display:flex;align-items:center;gap:7px}
+.mk i{width:8px;height:8px;background:var(--lima);border-radius:2px;display:block}
+.cab .cont{margin-left:auto;font-size:11px;font-weight:800;color:rgba(255,255,255,.5);
+  font-variant-numeric:tabular-nums}
+.progreso{display:flex;gap:3px;margin-bottom:16px}
+.progreso i{flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,.16);overflow:hidden;position:relative}
+.progreso i.visto::after{content:"";position:absolute;inset:0;background:var(--lima)}
+.progreso i.act::after{content:"";position:absolute;inset:0;background:var(--lima);
+  transform-origin:left;animation:llenar var(--dur,8s) linear forwards}
+.progreso.pausa i.act::after{animation-play-state:paused}
+@keyframes llenar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+/* ---------- escenario ---------- */
+.escena{flex:1;display:flex;flex-direction:column;animation:entra .35s ease}
+@keyframes entra{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.cap{margin-bottom:14px}
+.cap .n{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--lima);margin-bottom:5px}
+.cap h2{font-size:23px;font-weight:800;letter-spacing:-.03em;line-height:1.15;margin-bottom:6px}
+.cap p{font-size:14px;color:rgba(255,255,255,.72);line-height:1.5}
+.cap .tip{margin-top:10px;background:rgba(166,206,57,.14);border-left:3px solid var(--lima);
+  border-radius:0 8px 8px 0;padding:9px 11px;font-size:12.5px;color:#e8f5c8;line-height:1.45}
+.cap .tip.rojo{background:rgba(217,83,30,.16);border-left-color:#ff8a5c;color:#ffd9c9}
+
+/* ---------- teléfono simulado ---------- */
+.tel{width:100%;max-width:290px;margin:0 auto;background:#000;border-radius:26px;padding:7px;
+  box-shadow:0 18px 50px rgba(0,0,0,.5)}
+.pant{background:var(--fondo);border-radius:20px;overflow:hidden;color:var(--carbon);
+  min-height:420px;display:flex;flex-direction:column;position:relative}
+.barra{background:var(--verde-osc);color:#fff;padding:9px 11px;flex:none}
+.barra .t{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--lima)}
+.barra .h{font-size:13px;font-weight:800;margin-top:1px}
+.corte{background:var(--verde);color:#fff;font-size:9px;font-weight:700;padding:5px 11px;display:flex;gap:5px;align-items:center}
+.corte b{font-weight:800}
+.corte .p{margin-left:auto;background:rgba(255,255,255,.2);border-radius:99px;padding:2px 6px;font-size:8px;font-weight:800}
+.cuerpo{padding:11px;flex:1;overflow:hidden}
+
+.tarj{background:#fff;border:1px solid var(--linea);border-radius:10px;padding:10px;margin-bottom:8px}
+.tarj h4{font-size:11px;font-weight:800;margin-bottom:3px}
+.tarj .ay{font-size:9.5px;color:var(--gris);line-height:1.35;margin-bottom:8px}
+.et{font-size:8px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--gris);margin-bottom:3px}
+.inp{border:1.5px solid var(--linea);border-radius:7px;padding:8px;font-size:11px;background:#fff;color:var(--gris);margin-bottom:7px}
+.inp.lleno{color:var(--carbon);font-weight:600;border-color:var(--verde)}
+.bt{border-radius:8px;padding:10px;text-align:center;font-size:11.5px;font-weight:800}
+.bt.pri{background:var(--verde);color:#fff}
+.bt.lima{background:var(--lima);color:var(--verde-prof)}
+.bt.rojo{background:var(--vino);color:#fff}
+.bt.gris{background:#fff;border:1.5px solid var(--linea);color:var(--gris)}
+
+.dosbt{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.dosbt div{border:2px solid var(--linea);border-radius:9px;padding:11px 6px;text-align:center;font-size:11.5px;font-weight:800;background:#fff;color:var(--gris)}
+.dosbt div small{display:block;font-size:8px;font-weight:600;margin-top:2px;opacity:.8}
+.dosbt div.si{border-color:var(--verde);background:#f0faf3;color:var(--verde-osc)}
+.dosbt div.no{border-color:var(--vino);background:#fdf3f3;color:var(--vino)}
+
+.foto{border:1.5px dashed var(--linea);border-radius:9px;padding:16px 8px;text-align:center;background:#fbfdfb}
+.foto .ic{font-size:20px}
+.foto b{display:block;font-size:10.5px;margin-top:4px}
+.foto small{font-size:8.5px;color:var(--gris)}
+.fotoreal{border-radius:9px;overflow:hidden;position:relative;background:linear-gradient(160deg,#6b7b6f,#3d4a41);height:96px}
+.fotoreal .cajas{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;gap:4px;padding-bottom:34px}
+.fotoreal .cajas span{width:22px;background:#c49a5f;border:1px solid #a97f45;border-radius:2px}
+.sello{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(4,51,28,.94) 34%);
+  padding:14px 7px 6px;border-left:2px solid var(--lima)}
+.sello .tt{font-size:6px;font-weight:800;color:var(--lima);letter-spacing:.06em}
+.sello .l{font-size:6px;color:rgba(255,255,255,.9);line-height:1.5}
+.sello .l b{font-size:6.5px}
+
+.fila{display:flex;gap:6px;align-items:center;background:#fff;border:1px solid var(--linea);
+  border-left:3px solid var(--verde);border-radius:8px;padding:7px;margin-bottom:5px}
+.fila .mini{width:26px;height:26px;border-radius:5px;background:linear-gradient(140deg,#e8ebe6,#cfd6cd);flex:none}
+.fila .d{flex:1;min-width:0}
+.fila .d b{display:block;font-size:9px;line-height:1.25}
+.fila .d span{font-size:8px;color:var(--gris)}
+.pdv{display:flex;gap:7px;align-items:center;background:#fff;border:1px solid var(--linea);
+  border-left:3px solid var(--linea);border-radius:8px;padding:8px;margin-bottom:5px}
+.pdv.ok{border-left-color:var(--verde);background:#f2faf5}
+.pdv.no{border-left-color:var(--vino);background:#fdf5f5}
+.pdv .mk2{width:18px;height:18px;border-radius:50%;background:var(--linea);color:var(--gris);
+  display:grid;place-items:center;font-size:9px;font-weight:800;flex:none}
+.pdv.ok .mk2{background:var(--verde);color:#fff}
+.pdv.no .mk2{background:var(--vino);color:#fff}
+.pdv .d{flex:1;min-width:0}
+.pdv .d b{display:block;font-size:9.5px}
+.pdv .d span{font-size:8px;color:var(--gris)}
+.barrav{height:6px;border-radius:99px;background:var(--linea);overflow:hidden;display:flex;margin:6px 0 4px}
+.barrav i{height:100%;background:linear-gradient(90deg,var(--verde),var(--lima))}
+
+.busca{background:#fff;border-radius:12px 12px 0 0;padding:9px;position:absolute;left:0;right:0;bottom:0;box-shadow:0 -8px 26px rgba(0,0,0,.18)}
+.busca .b{border:1.5px solid var(--verde);border-radius:7px;padding:7px 8px;font-size:10.5px;margin-bottom:7px}
+.busca .op{padding:7px 4px;border-bottom:1px solid #f0f4f1;font-size:9.5px;display:flex;gap:6px;align-items:center}
+.busca .op .tag{font-size:6.5px;font-weight:800;background:rgba(0,132,61,.1);color:var(--verde);padding:2px 4px;border-radius:3px}
+mark{background:rgba(166,206,57,.6);border-radius:2px}
+
+.chip{display:inline-block;font-size:8px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+  padding:3px 6px;border-radius:5px;background:var(--linea);color:var(--gris);margin-right:3px}
+.chip.si{background:var(--verde);color:#fff}
+.chip.no2{background:var(--vino);color:#fff}
+.dedo{position:absolute;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.34);
+  border:2px solid #fff;animation:toca 1.6s ease-in-out infinite;pointer-events:none}
+@keyframes toca{0%,100%{transform:scale(.85);opacity:.5}45%{transform:scale(1.15);opacity:1}}
+
+/* ---------- portada y cierre ---------- */
+.hero{text-align:center;padding:24px 8px}
+.hero .ico{font-size:52px;margin-bottom:10px}
+.hero h1{font-size:31px;font-weight:800;letter-spacing:-.035em;line-height:1.06;margin-bottom:8px}
+.hero p{font-size:14.5px;color:rgba(255,255,255,.72);line-height:1.5}
+.reglas{list-style:none}
+.reglas li{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.1);font-size:13.5px;line-height:1.4}
+.reglas li:last-child{border:none}
+.reglas .c{width:22px;height:22px;border-radius:50%;background:var(--lima);color:var(--verde-prof);
+  display:grid;place-items:center;font-size:12px;font-weight:800;flex:none}
+
+/* ---------- controles ---------- */
+.ctrl{position:fixed;left:0;right:0;bottom:0;z-index:20;
+  background:linear-gradient(transparent,var(--verde-prof) 34%);
+  padding:22px 16px calc(16px + env(safe-area-inset-bottom))}
+.ctrl-in{max-width:460px;margin:0 auto;display:flex;gap:9px;align-items:center}
+.ctrl button{border:none;border-radius:11px;font-weight:800;cursor:pointer;font-size:14px;padding:13px}
+.ctrl .nav{background:rgba(255,255,255,.13);color:#fff;width:48px;flex:none}
+.ctrl .play{background:var(--lima);color:var(--verde-prof);flex:1}
+.ctrl button:active{transform:scale(.97)}
+.ctrl .nav:disabled{opacity:.3}
+
+@media(max-height:700px){.pant{min-height:340px}.cap h2{font-size:20px}.tel{max-width:250px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="cab">
+    <div><div class="mk"><i></i>Eficacia Perú</div></div>
+    <div class="cont"><span id="nAct">1</span> / <span id="nTot">16</span></div>
+  </div>
+  <div class="progreso" id="prog"></div>
+  <div class="escena" id="escena"></div>
+</div>
+
+<div class="ctrl">
+  <div class="ctrl-in">
+    <button class="nav" id="btnAtras" onclick="mover(-1)">◀</button>
+    <button class="play" id="btnPlay" onclick="alternar()">⏸ Pausar</button>
+    <button class="nav" id="btnSig" onclick="mover(1)">▶</button>
+  </div>
+</div>
+
+<script>
+/* ============ helpers de pantalla ============ */
+const tel = (contenido, extra = "") => `<div class="tel"><div class="pant">${contenido}${extra}</div></div>`;
+const barra = `<div class="barra"><div class="t">Eficacia Perú</div><div class="h">Piloto Exhibe y Gana</div></div>`;
+const corte = `<div class="corte">📅 <b>Corte 1</b> · 29/08 – 31/08 <span class="p">Stock y Boletas</span></div>`;
+const dedo = (x, y) => `<div class="dedo" style="left:${x};top:${y}"></div>`;
+
+const fotoAlmacen = `
+  <div class="fotoreal">
+    <div class="cajas"><span style="height:44px"></span><span style="height:56px"></span><span style="height:38px"></span><span style="height:50px"></span></div>
+    <div class="sello">
+      <div class="tt">PILOTO EXHIBE Y GANA · STOCK · ALMACÉN</div>
+      <div class="l"><b>ANDREA PRECIO JUSTO SAC</b></div>
+      <div class="l">Mercado: CAQUETA · PDV 348</div>
+      <div class="l">29/08/2026 · 10:24 h</div>
+      <div class="l">GPS -12.055412, -77.012908 (±8 m)</div>
+    </div>
+  </div>`;
+
+/* ============ escenas ============ */
+const ESCENAS = [
+{
+  dur: 7,
+  cap: `<div class="hero"><div class="ico">📦</div>
+    <h1>Cómo usar<br>la app</h1>
+    <p>Relevo de stock y boletas.<br>Cinco minutos y ya sabes todo.</p>
+    <div class="tip" style="text-align:left;margin-top:18px">Se reproduce solo. Usa ◀ ▶ para ir a tu ritmo o ⏸ para detenerlo.</div></div>`
+},
+{
+  n: "Paso 1", t: "Instala la app",
+  p: "Abre el enlace que te mandaron en <b>Chrome</b>. Toca los 3 puntitos de arriba y elige <b>Agregar a pantalla de inicio</b>.",
+  tip: "Queda con su ícono, como cualquier otra app. Ya no necesitas el enlace nunca más.",
+  pant: tel(`${barra}<div class="cuerpo" style="display:grid;place-items:center;text-align:center">
+    <div><div style="font-size:38px">⬇️</div>
+    <div style="font-size:12px;font-weight:800;margin-top:8px">Agregar a pantalla de inicio</div>
+    <div style="font-size:10px;color:var(--gris);margin-top:4px">Chrome · menú de 3 puntitos</div>
+    <div class="bt lima" style="margin-top:14px">Agregar</div></div></div>`)
+},
+{
+  n: "Paso 2", t: "Acepta los permisos",
+  p: "La primera vez te va a pedir permiso de <b>cámara</b> y de <b>ubicación</b>. Toca Permitir en los dos.",
+  tipRojo: "Si los rechazas, no vas a poder tomar las fotos ni guardar los relevos. Es obligatorio.",
+  pant: tel(`${barra}<div class="cuerpo" style="display:grid;place-items:center">
+    <div style="background:#fff;border-radius:12px;padding:14px;text-align:center;width:100%;border:1px solid var(--linea)">
+      <div style="font-size:28px">📍</div>
+      <div style="font-size:11px;font-weight:800;margin:8px 0 4px">¿Permitir el acceso a tu ubicación?</div>
+      <div style="font-size:9px;color:var(--gris);margin-bottom:12px">Se usa para sellar las fotos del PDV</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div class="bt gris">Bloquear</div><div class="bt pri">Permitir</div></div>
+    </div></div>`, dedo("64%", "62%"))
+},
+{
+  n: "Paso 3", t: "Ingresa con tu usuario",
+  p: "Tu usuario es tu <b>nombre y apellido</b>. Da igual si lo escribes en mayúscula o minúscula.",
+  tip: "La contraseña sí va en MAYÚSCULAS, tal como te la pasaron.",
+  pant: tel(`<div style="background:linear-gradient(165deg,#04331C,#00552A);flex:1;padding:22px 14px;color:#fff;display:flex;flex-direction:column;justify-content:center">
+    <div style="font-size:8px;letter-spacing:.18em;font-weight:800;color:var(--lima);margin-bottom:8px">EFICACIA PERÚ</div>
+    <div style="font-size:22px;font-weight:800;line-height:1.08;letter-spacing:-.03em">Piloto<br>Exhibe y Gana</div>
+    <div style="font-size:9.5px;color:rgba(255,255,255,.6);margin:6px 0 18px">Relevo de stock y boletas</div>
+    <div class="et" style="color:rgba(255,255,255,.6)">Usuario</div>
+    <div class="inp" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#fff">Karen Rios</div>
+    <div class="et" style="color:rgba(255,255,255,.6)">Contraseña</div>
+    <div class="inp" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#fff">••••••••</div>
+    <div class="bt lima" style="margin-top:6px">Ingresar</div></div>`)
+},
+{
+  n: "Paso 4", t: "Revisa tu cartera",
+  p: "Arriba te dice el <b>corte</b> y qué toca relevar. Abajo ves tus PDV con su semáforo.",
+  tip: "Solo aparecen los PDV que te tocan a ti. Verde = ya lo hiciste.",
+  pant: tel(`${barra}${corte}<div class="cuerpo">
+    <div style="font-size:11px;font-weight:800;margin-bottom:6px">Mi cartera · 3 PDV</div>
+    <div class="tarj" style="padding:9px">
+      <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800">
+        <span>1 de 3 PDV relevados</span><span style="color:var(--verde)">33%</span></div>
+      <div class="barrav"><i style="width:33%"></i></div></div>
+    <div class="pdv ok"><div class="mk2">✓</div><div class="d"><b>Ecovent Group Srl</b><span>PRODUCTORES · PDV 499</span></div><span class="chip si">Stock</span></div>
+    <div class="pdv"><div class="mk2">·</div><div class="d"><b>Comercial Jhire</b><span>PRODUCTORES · PDV 546</span></div><span class="chip">Stock</span></div>
+    <div class="pdv"><div class="mk2">·</div><div class="d"><b>Ecovent /Gloria Garay</b><span>PRODUCTORES · PDV 16430</span></div><span class="chip">Stock</span></div>
+  </div>`)
+},
+{
+  n: "Paso 5", t: "Busca el PDV",
+  p: "Toca <b>Buscar cliente</b> y escribe cualquier parte del nombre. Se va filtrando solo.",
+  tip: "No hace falta escribir el nombre completo ni con tildes. Con 3 letras basta.",
+  pant: tel(`${barra}${corte}<div class="cuerpo"></div>
+    <div class="busca">
+      <div style="font-size:10.5px;font-weight:800;margin-bottom:6px">Buscar cliente / PDV</div>
+      <div class="b">🔍 jhi</div>
+      <div class="op"><span class="tag">PRODUCT.</span><span>Comercial <mark>Jhi</mark>re /Miguel Prez</span></div>
+      <div class="op" style="opacity:.35"><span class="tag">PRODUCT.</span><span>Ecovent Group Srl</span></div>
+    </div>`, dedo("18%", "74%"))
+},
+{
+  n: "Paso 6", t: "La pregunta más importante",
+  p: "Antes de cualquier dato, la app pregunta si el cliente <b>te dejó revisar el stock</b>.",
+  tipRojo: "Si no te dejó, NO cierres la app: toca «No permitió». Ese dato también hace falta.",
+  pant: tel(`${barra}<div class="corte" style="background:var(--verde-prof)">📍 <b>PRODUCTORES</b> · Comercial Jhire</div>
+    <div class="cuerpo">
+    <div style="font-size:12px;font-weight:800;margin-bottom:8px">Relevo de stock</div>
+    <div class="tarj">
+      <h4>1. Permiso del cliente</h4>
+      <div class="ay">¿El cliente autorizó revisar el stock físico en el almacén?</div>
+      <div class="dosbt">
+        <div class="si">Sí permitió<small>Continúo</small></div>
+        <div>No permitió<small>Registro motivo</small></div></div>
+    </div></div>`, dedo("22%", "60%"))
+},
+{
+  n: "Sí permitió", t: "Foto del almacén",
+  p: "Toma la foto de las cajas. La app le pega sola el nombre del cliente, la fecha, la hora y el GPS.",
+  tip: "Puedes tomar hasta 3 fotos si el almacén es grande.",
+  pant: tel(`${barra}<div class="cuerpo">
+    <div class="tarj">
+      <h4>2. Foto del almacén</h4>
+      <div class="ay">Evidencia las cajas compradas.</div>
+      ${fotoAlmacen}
+    </div>
+    <div class="foto"><div class="ic">📷</div><b>Tomar otra foto</b><small>Opcional · hasta 3</small></div>
+  </div>`)
+},
+{
+  n: "Sí permitió", t: "Carga producto por producto",
+  p: "Busca el SKU escribiendo parte del nombre. Luego llenas cantidad, lote, vencimiento y su foto.",
+  tip: "Los 4 datos son obligatorios. Si falta uno, el campo se pone rojo.",
+  pant: tel(`${barra}<div class="cuerpo">
+    <div class="tarj">
+      <h4>3. Detalle de producto</h4>
+      <div class="et">SKU</div><div class="inp lleno">Listerine Cool Mint 500ml</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><div class="et">Cantidad UND</div><div class="inp lleno">48</div></div>
+        <div><div class="et">N° de lote</div><div class="inp lleno">L2439A</div></div></div>
+      <div class="et">Vencimiento</div><div class="inp lleno">30/04/2027</div>
+      <div class="bt lima">＋ Agregar a la lista</div>
+    </div></div>`, dedo("50%", "82%"))
+},
+{
+  n: "Sí permitió", t: "Repite y revisa",
+  p: "Cada producto agregado aparece en la lista de abajo. Si te equivocaste, lo borras con la ✕.",
+  tip: "Cuando termines todos los productos, toca «Guardar relevo de stock».",
+  pant: tel(`${barra}<div class="cuerpo">
+    <div style="font-size:10.5px;font-weight:800;margin-bottom:6px">Productos relevados (3)</div>
+    <div class="fila"><div class="mini"></div><div class="d"><b>Listerine Cool Mint 500ml</b><span>48 UND · Lote L2439A</span></div></div>
+    <div class="fila"><div class="mini"></div><div class="d"><b>Talco Johnson's 200gr</b><span>24 UND · Lote T8812</span></div></div>
+    <div class="fila"><div class="mini"></div><div class="d"><b>Shampoo Original 400ml</b><span>36 UND · Lote S5501</span></div></div>
+    <div class="bt pri" style="margin-top:8px">Guardar relevo de stock</div>
+  </div>`, dedo("50%", "78%"))
+},
+{
+  n: "No permitió", t: "Explica qué pasó",
+  p: "Eliges el motivo de la lista y <b>escribes qué pasó</b>. Con quién hablaste, si quedó algún compromiso.",
+  tipRojo: "El detalle es obligatorio. Un «no quiso» no sirve: sin explicación no puedo gestionarlo con el distribuidor.",
+  pant: tel(`${barra}<div class="cuerpo">
+    <div class="tarj" style="border-color:var(--vino)">
+      <h4 style="color:var(--vino)">Motivo de la no ejecución</h4>
+      <div class="et">Motivo</div>
+      <div class="inp lleno" style="border-color:var(--vino)">Dueño o encargado ausente</div>
+      <div class="et">Detalle de lo ocurrido</div>
+      <div class="inp lleno" style="border-color:var(--vino);line-height:1.4;font-weight:400;font-size:10px">
+        Solo estaba el ayudante, no tiene llave del almacén. El dueño llega los martes. Quedamos en volver el próximo corte.</div>
+      <div class="foto"><div class="ic">📷</div><b>Foto de evidencia</b><small>Opcional</small></div>
+    </div>
+    <div class="bt rojo" style="margin-top:8px">Registrar stock NO permitido</div></div>`)
+},
+{
+  n: "Boletas", t: "¿Tiene boletas?",
+  p: "En los cortes de boletas, la app primero pregunta si el cliente tiene boletas para mostrarte.",
+  tip: "Si no compró esta quincena, eso también es un dato valioso. Márcalo y explica por qué.",
+  pant: tel(`${barra}<div class="cuerpo">
+    <div style="font-size:12px;font-weight:800;margin-bottom:8px">Relevo de boletas</div>
+    <div class="tarj">
+      <h4>1. Disponibilidad de boletas</h4>
+      <div class="ay">¿El cliente tiene boletas de compra para relevar?</div>
+      <div class="dosbt"><div>Sí tiene<small>Continúo</small></div>
+        <div class="no">No tiene<small>Registro motivo</small></div></div>
+    </div>
+    <div class="tarj" style="border-color:var(--vino)">
+      <div class="et">Motivo</div>
+      <div class="inp lleno" style="border-color:var(--vino);font-size:10px">No realizó compra en el periodo</div>
+    </div></div>`, dedo("70%", "48%"))
+},
+{
+  n: "Boletas", t: "Foto y montos",
+  p: "Foto de la boleta completa. Después registras <b>solo los SKU del portafolio</b>: unidades y cuánto salió en soles.",
+  tip: "Ignora los productos de otras marcas que aparezcan en la boleta.",
+  pant: tel(`${barra}<div class="cuerpo">
+    <div class="tarj">
+      <div class="et">SKU</div><div class="inp lleno">Talco Johnson's 200gr</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><div class="et">Cantidad UND</div><div class="inp lleno">24</div></div>
+        <div><div class="et">Importe S/</div><div class="inp lleno">186.00</div></div></div>
+      <div class="bt lima">＋ Agregar a la boleta</div>
+    </div>
+    <div style="background:var(--verde-prof);color:#fff;border-radius:9px;padding:9px;display:flex;justify-content:space-between">
+      <div><div style="font-size:7.5px;color:var(--lima);font-weight:800;letter-spacing:.1em">UNIDADES</div>
+        <div style="font-size:16px;font-weight:800">72</div></div>
+      <div style="text-align:right"><div style="font-size:7.5px;color:var(--lima);font-weight:800;letter-spacing:.1em">TOTAL</div>
+        <div style="font-size:16px;font-weight:800">S/ 542.00</div></div></div>
+  </div>`)
+},
+{
+  n: "Listo", t: "Guardas y sigues",
+  p: "Al guardar, la información viaja sola. Tu PDV se pinta de <b>verde</b> y pasas al siguiente.",
+  tip: "No tienes que mandar nada por WhatsApp ni pasar Excel. Ya está.",
+  pant: tel(`${barra}${corte}<div class="cuerpo">
+    <div class="tarj" style="padding:9px">
+      <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800">
+        <span>2 de 3 PDV relevados</span><span style="color:var(--verde)">67%</span></div>
+      <div class="barrav"><i style="width:67%"></i></div></div>
+    <div class="pdv ok"><div class="mk2">✓</div><div class="d"><b>Ecovent Group Srl</b><span>PRODUCTORES</span></div><span class="chip si">Stock</span></div>
+    <div class="pdv ok"><div class="mk2">✓</div><div class="d"><b>Comercial Jhire</b><span>PRODUCTORES</span></div><span class="chip si">Stock</span></div>
+    <div class="pdv"><div class="mk2">·</div><div class="d"><b>Ecovent /Gloria Garay</b><span>PRODUCTORES</span></div><span class="chip">Stock</span></div>
+    <div style="background:var(--verde-prof);color:#fff;border-radius:8px;padding:8px;text-align:center;font-size:10px;font-weight:800;margin-top:8px">
+      Relevo guardado ✔</div>
+  </div>`)
+},
+{
+  n: "Ojo con esto", t: "El semáforo",
+  p: "Así se ve tu avance y así lo veo yo. Los tres estados cuentan como visita hecha, menos el gris.",
+  pant: tel(`${barra}<div class="cuerpo">
+    <div class="pdv ok"><div class="mk2">✓</div><div class="d"><b>Verde</b><span>Relevado completo</span></div></div>
+    <div class="pdv no"><div class="mk2">✕</div><div class="d"><b>Vino</b><span>Fuiste, pero no te dejaron. Con motivo.</span></div></div>
+    <div class="pdv" style="border-left-color:var(--ambar);background:#fffdf4"><div class="mk2" style="background:var(--ambar);color:#fff">!</div>
+      <div class="d"><b>Ámbar</b><span>Falta la mitad (stock o boletas)</span></div></div>
+    <div class="pdv"><div class="mk2">·</div><div class="d"><b>Gris</b><span>Sin visitar · es el único malo</span></div></div>
+  </div>`)
+},
+{
+  cap: `<div class="cap"><div class="n">Para recordar</div><h2>Las 6 reglas de oro</h2></div>
+    <ul class="reglas">
+      <li><span class="c">1</span><div>Prende el <b>GPS</b> antes de salir a la ruta.</div></li>
+      <li><span class="c">2</span><div>La contraseña va en <b>MAYÚSCULAS</b>.</div></li>
+      <li><span class="c">3</span><div>Si no te dejaron relevar, <b>regístralo igual</b> con el motivo.</div></li>
+      <li><span class="c">4</span><div>El <b>lote y el vencimiento</b> se leen del empaque, no se inventan.</div></li>
+      <li><span class="c">5</span><div>En boletas, solo los <b>SKU del portafolio</b>.</div></li>
+      <li><span class="c">6</span><div>Guarda <b>antes</b> de salir del PDV, con señal.</div></li>
+    </ul>
+    <div class="cap"><div class="tip" style="margin-top:16px">¿Alguna duda en pleno campo? Escríbeme por WhatsApp antes de salir del punto de venta.</div></div>`
+}
+];
+
+/* ============ reproductor ============ */
+let i = 0, corriendo = true, temporizador = null;
+const $ = id => document.getElementById(id);
+$("nTot").textContent = ESCENAS.length;
+$("prog").innerHTML = ESCENAS.map(() => "<i></i>").join("");
+
+function pintar() {
+  const e = ESCENAS[i];
+  $("nAct").textContent = i + 1;
+  $("escena").innerHTML = e.cap ? e.cap : `
+    <div class="cap">
+      <div class="n">${e.n}</div><h2>${e.t}</h2><p>${e.p}</p>
+      ${e.tip ? `<div class="tip">${e.tip}</div>` : ""}
+      ${e.tipRojo ? `<div class="tip rojo">⚠️ ${e.tipRojo}</div>` : ""}
+    </div>${e.pant || ""}`;
+  const dur = e.dur || (e.pant ? 9 : 11);
+  document.querySelectorAll("#prog i").forEach((el, k) => {
+    el.className = k < i ? "visto" : k === i ? "act" : "";
+    if (k === i) el.style.setProperty("--dur", dur + "s");
+  });
+  $("btnAtras").disabled = i === 0;
+  $("btnSig").disabled = i === ESCENAS.length - 1;
+  clearTimeout(temporizador);
+  if (corriendo && i < ESCENAS.length - 1) temporizador = setTimeout(() => mover(1), dur * 1000);
+  if (i === ESCENAS.length - 1 && corriendo) alternar();
+}
+function mover(d) {
+  const n = i + d;
+  if (n < 0 || n >= ESCENAS.length) return;
+  i = n; pintar();
+}
+function alternar() {
+  corriendo = !corriendo;
+  $("btnPlay").textContent = corriendo ? "⏸ Pausar" : "▶ Reproducir";
+  $("prog").classList.toggle("pausa", !corriendo);
+  clearTimeout(temporizador);
+  if (corriendo) pintar();
+}
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") mover(1);
+  if (e.key === "ArrowLeft") mover(-1);
+  if (e.key === " ") { e.preventDefault(); alternar(); }
+});
+let x0 = null;
+document.addEventListener("touchstart", e => x0 = e.touches[0].clientX, { passive: true });
+document.addEventListener("touchend", e => {
+  if (x0 === null) return;
+  const d = e.changedTouches[0].clientX - x0;
+  if (Math.abs(d) > 55) mover(d < 0 ? 1 : -1);
+  x0 = null;
+}, { passive: true });
+pintar();
+</script>
+</body>
+</html>
