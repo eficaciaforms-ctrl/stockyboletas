@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>
+/* ══════════════════════════════════════════════════════════
+   CONFIGURACION - URL del Google Sheets
+   ══════════════════════════════════════════════════════════ */
+/* --- 1. CONEXIÓN AL SERVIDOR ---------------------------------
+   URL /exec del Apps Script conectado a Google Sheets.        */
+const CONFIG = {
+  API_URL: "https://script.google.com/macros/s/AKfycbx_KU1Wb7QbGFgTO2JT113TlQUvm3NuMU33DCHOVA4AMrej7RC_9zUyCLBDlnsUxcEiOg/exec",
+  NOMBRE:  "Piloto Exhibe y Gana",
+  AGENCIA: "Eficacia Perú"
+};
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#00552A">
+<meta name="description" content="Relevo de stock y boletas — Piloto Exhibe y Gana, canal STS Lima.">
+<title>Piloto Exhibe y Gana</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Exhibe y Gana">
+<link rel="manifest" href="data:application/manifest+json,{"name":"Piloto Exhibe y Gana","short_name":"Exhibe y Gana","start_url":".","scope":".","display":"standalone","background_color":"%2304331C","theme_color":"%2300552A","lang":"es-PE","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2300552A'/%3E%3Crect x='16' y='20' width='32' height='24' rx='2' fill='%23A6CE39'/%3E%3Cpath d='M22 32l6 6 14-14' stroke='%2304331C' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E","sizes":"any","type":"image/svg+xml"}]}">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2300552A'/%3E%3Crect x='16' y='20' width='32' height='24' rx='2' fill='%23A6CE39'/%3E%3Cpath d='M22 32l6 6 14-14' stroke='%2304331C' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2300552A'/%3E%3Crect x='16' y='20' width='32' height='24' rx='2' fill='%23A6CE39'/%3E%3Cpath d='M22 32l6 6 14-14' stroke='%2304331C' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   PILOTO EXHIBE Y GANA · Estilos
+   PALETA EFICACIA — cambiar los hex aquí y se aplica a todo
+   ============================================================ */
+:root{
+  --verde:#00843D; --verde-osc:#00552A; --verde-prof:#04331C;
+  --lima:#A6CE39; --carbon:#16211C; --gris:#5F7169;
+  --linea:#DCE5DF; --fondo:#F2F6F2; --blanco:#FFFFFF;
+  --alerta:#D9531E; --ambar:#E9A400; --vino:#A62828;
+  --r:14px; --sombra:0 1px 2px rgba(4,51,28,.06),0 8px 24px rgba(4,51,28,.06);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--fondo);color:var(--carbon);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+button,input,select,textarea{font-family:inherit;font-size:16px;color:inherit}
+a{color:var(--verde)}
+
+.app{max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:100px}
+.ancho{max-width:1080px}
+
+/* ---------- login ---------- */
+.login{min-height:100vh;background:linear-gradient(165deg,var(--verde-prof),#00552A 58%,#00702F);
+  display:flex;flex-direction:column;justify-content:center;padding:28px 22px;color:#fff}
+.login .in{max-width:420px;margin:0 auto;width:100%}
+.login .mk{font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:800;color:var(--lima);display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.login .mk i{width:10px;height:10px;background:var(--lima);border-radius:2px;display:block}
+.login h1{margin:0 0 4px;font-size:31px;font-weight:800;letter-spacing:-.03em;line-height:1.08}
+.login .sub{color:rgba(255,255,255,.66);font-size:13.5px;margin-bottom:26px}
+.login .campo label{color:rgba(255,255,255,.72)}
+.login .entrada{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2);color:#fff}
+.login .entrada::placeholder{color:rgba(255,255,255,.38)}
+.login .entrada:focus{border-color:var(--lima);background:rgba(255,255,255,.11)}
+.login .err{background:rgba(217,83,30,.2);border:1px solid rgba(217,83,30,.55);color:#ffd9c9;border-radius:9px;padding:10px 12px;font-size:13px;margin-bottom:12px;display:none}
+.login .err.on{display:block}
+.login .pie{margin-top:22px;font-size:11.5px;color:rgba(255,255,255,.42);line-height:1.6}
+
+/* ---------- header ---------- */
+.top{background:var(--verde-osc);color:#fff;padding:12px 16px;position:sticky;top:0;z-index:40;box-shadow:0 2px 12px rgba(4,51,28,.18)}
+.top-in{max-width:520px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.top-in.ancho{max-width:1080px}
+.marca{font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--lima);display:flex;align-items:center;gap:7px}
+.marca i{width:8px;height:8px;background:var(--lima);border-radius:2px;display:block;flex:none}
+.top h1{margin:2px 0 0;font-size:18px;font-weight:800;letter-spacing:-.02em}
+.top .der{margin-left:auto;text-align:right}
+.gps{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);padding:4px 8px;border-radius:999px;white-space:nowrap}
+.punto{width:7px;height:7px;border-radius:50%;background:var(--ambar);flex:none}
+.gps.ok .punto{background:var(--lima)} .gps.err .punto{background:var(--alerta)}
+.top .usr{font-size:11px;color:rgba(255,255,255,.7);margin-top:5px;display:block}
+.top .usr b{color:#fff;font-weight:700}
+.top .usr button,.top .usr a{background:none;border:none;color:var(--lima);font-size:11px;font-weight:800;cursor:pointer;padding:0 0 0 8px;text-decoration:none}
+
+.barra-corte{background:var(--verde);color:#fff;padding:9px 16px;font-size:12px;position:sticky;top:0;z-index:39;display:flex;align-items:center;gap:8px}
+.barra-corte .in{max-width:520px;margin:0 auto;width:100%;display:flex;align-items:center;gap:8px}
+.barra-corte b{font-weight:800}
+.barra-corte .pill{margin-left:auto;background:rgba(255,255,255,.18);border-radius:999px;padding:3px 9px;font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.barra-ctx{background:var(--verde-prof);color:#fff;padding:7px 16px;font-size:11.5px;display:none;align-items:center;gap:8px;position:sticky;top:38px;z-index:38}
+.barra-ctx.on{display:flex}
+
+.pantalla{display:none;padding:14px 14px 0}
+.pantalla.on{display:block;animation:sube .22s ease}
+@keyframes sube{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.titulo{display:flex;align-items:baseline;gap:10px;margin:2px 0 12px}
+.titulo h2{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em}
+.paso{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--verde);background:rgba(0,132,61,.09);padding:3px 8px;border-radius:5px}
+
+.card{background:var(--blanco);border:1px solid var(--linea);border-radius:var(--r);padding:14px;margin-bottom:12px;box-shadow:var(--sombra)}
+.card h3{margin:0 0 3px;font-size:14px;font-weight:800}
+.card p.ayuda{margin:0 0 12px;font-size:12.5px;color:var(--gris)}
+.campo{margin-bottom:12px}.campo:last-child{margin-bottom:0}
+.campo label{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gris);margin-bottom:5px}
+.campo label .req{color:var(--alerta)}
+.entrada{width:100%;padding:12px;border:1.5px solid var(--linea);border-radius:10px;background:#fff;outline:none;transition:border-color .15s}
+.entrada:focus{border-color:var(--verde)}
+.entrada.mal{border-color:var(--alerta);background:#fff6f3}
+textarea.entrada{min-height:84px;resize:vertical;line-height:1.4}
+.fila2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.btn{width:100%;padding:14px;border:none;border-radius:11px;font-weight:800;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .08s}
+.btn:active{transform:scale(.985)}
+.btn.pri{background:var(--verde);color:#fff}
+.btn.sec{background:#fff;color:var(--verde-osc);border:1.5px solid var(--linea)}
+.btn.lima{background:var(--lima);color:var(--verde-prof)}
+.btn.alerta{background:var(--vino);color:#fff}
+.btn.txt{background:transparent;color:var(--gris);font-weight:700;padding:10px}
+.btn.chico{padding:10px;font-size:13px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.acciones{position:fixed;bottom:0;left:0;right:0;z-index:37;pointer-events:none}
+.acciones-in{max-width:520px;margin:0 auto;padding:12px 14px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--fondo) 62%,rgba(242,246,242,0));pointer-events:auto}
+
+.selector{width:100%;padding:14px;border:1.5px solid var(--linea);border-radius:11px;background:#fff;text-align:left;cursor:pointer;display:flex;align-items:center;gap:10px}
+.selector .v{flex:1;min-width:0}
+.selector .v b{display:block;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.selector .v small{color:var(--gris);font-size:12px}
+.selector .fl{color:var(--verde);font-size:12px;font-weight:800}
+.selector.vacio .v b{color:var(--gris);font-weight:600}
+.selector.mal{border-color:var(--alerta);background:#fff6f3}
+
+.ficha{background:linear-gradient(135deg,var(--verde-osc),#007134);color:#fff;border-radius:var(--r);padding:14px;margin-bottom:12px}
+.ficha .cod{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--lima);font-weight:800;margin-bottom:4px}
+.ficha .nom{font-size:16px;font-weight:800;line-height:1.25}
+.ficha .dir{font-size:12.5px;color:rgba(255,255,255,.82);margin-top:6px}
+.ficha .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tag{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);padding:4px 8px;border-radius:6px}
+.tag.lima{background:var(--lima);color:var(--verde-prof);border-color:transparent}
+
+.modulo{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:#fff;border:1.5px solid var(--linea);border-radius:var(--r);padding:15px;margin-bottom:10px;cursor:pointer}
+.modulo .ic{width:44px;height:44px;border-radius:11px;display:grid;place-items:center;flex:none;font-size:20px}
+.modulo .ic.a{background:rgba(0,132,61,.1)} .modulo .ic.b{background:rgba(166,206,57,.22)}
+.modulo b{display:block;font-size:15.5px}.modulo small{color:var(--gris);font-size:12.5px}
+.modulo .fl{margin-left:auto;color:var(--verde);font-weight:800}
+.modulo.off{opacity:.45;pointer-events:none}
+.modulo.listo{border-color:var(--verde);background:#f4fbf6}
+.modulo.bloq{border-color:var(--vino);background:#fdf5f5}
+
+/* ---------- permiso (sí/no) ---------- */
+.permiso{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.permiso button{padding:16px 12px;border-radius:12px;border:2px solid var(--linea);background:#fff;cursor:pointer;text-align:center;font-weight:800;font-size:15px;line-height:1.2}
+.permiso button small{display:block;font-weight:600;font-size:11px;color:var(--gris);margin-top:3px}
+.permiso button.si.on{border-color:var(--verde);background:#f0faf3;color:var(--verde-osc)}
+.permiso button.no.on{border-color:var(--vino);background:#fdf3f3;color:var(--vino)}
+.permiso button.on small{color:inherit;opacity:.75}
+
+.foto-tile{border:1.5px dashed var(--linea);border-radius:12px;padding:20px 14px;text-align:center;background:#fbfdfb;cursor:pointer}
+.foto-tile .ico{font-size:26px;line-height:1}
+.foto-tile b{display:block;font-size:14px;margin-top:6px}
+.foto-tile small{color:var(--gris);font-size:12px}
+.foto-tile.mal{border-color:var(--alerta);background:#fff6f3}
+.preview{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--linea);margin-bottom:8px}
+.preview img{width:100%;display:block}
+.preview .quitar{position:absolute;top:8px;right:8px;background:rgba(4,51,28,.78);color:#fff;border:none;width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer;font-weight:700}
+
+.item{display:flex;gap:10px;background:#fff;border:1px solid var(--linea);border-left:3px solid var(--verde);border-radius:10px;padding:10px;margin-bottom:8px;align-items:flex-start}
+.item img{width:52px;height:52px;object-fit:cover;border-radius:7px;flex:none;background:var(--fondo)}
+.item .d{flex:1;min-width:0}
+.item .d b{display:block;font-size:13.5px;line-height:1.3}
+.item .d .met{font-size:11.5px;color:var(--gris);margin-top:3px}
+.item .d .met span{margin-right:9px;white-space:nowrap}
+.item .x{background:none;border:none;color:var(--gris);font-size:18px;cursor:pointer;padding:0 2px;line-height:1}
+.vacio{text-align:center;padding:22px 12px;color:var(--gris);font-size:13px;border:1px dashed var(--linea);border-radius:12px;background:#fbfdfb}
+.total{display:flex;justify-content:space-between;align-items:center;background:var(--verde-prof);color:#fff;border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.total .et{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--lima);font-weight:800}
+.total .vl{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.total .der{text-align:right}
+
+/* ---------- hoja buscador ---------- */
+.sombra-fondo{position:fixed;inset:0;background:rgba(4,51,28,.5);z-index:60;display:none}
+.sombra-fondo.on{display:block}
+.hoja{position:fixed;left:0;right:0;bottom:0;z-index:61;background:#fff;border-radius:18px 18px 0 0;max-width:520px;margin:0 auto;max-height:88vh;display:none;flex-direction:column}
+.hoja.on{display:flex}
+.hoja-top{padding:14px 14px 10px;border-bottom:1px solid var(--linea)}
+.hoja-top .h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.hoja-top .h b{font-size:16px;font-weight:800}
+.hoja-top .h button{background:none;border:none;font-size:14px;color:var(--gris);cursor:pointer;font-weight:700}
+.buscador{position:relative}
+.buscador input{width:100%;padding:12px 12px 12px 38px;border:1.5px solid var(--linea);border-radius:10px;outline:none}
+.buscador input:focus{border-color:var(--verde)}
+.buscador .lupa{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.45;font-size:15px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{white-space:nowrap;font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;border:1px solid var(--linea);background:#fff;cursor:pointer;color:var(--gris)}
+.chip.on{background:var(--verde);border-color:var(--verde);color:#fff}
+.lista{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 0 calc(12px + env(safe-area-inset-bottom))}
+.lista .op{padding:12px 14px;border-bottom:1px solid #f0f4f1;cursor:pointer;display:flex;gap:10px;align-items:center}
+.lista .op .mk{font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--verde);background:rgba(0,132,61,.09);padding:3px 6px;border-radius:4px;flex:none;min-width:74px;text-align:center}
+.lista .op .tx{font-size:14px;line-height:1.3}
+.lista .op mark{background:rgba(166,206,57,.55);border-radius:2px;padding:0 1px}
+.lista .op.hecho{background:#f4fbf6}
+.lista .op.hecho .tx::after{content:" ✔";color:var(--verde);font-weight:800}
+.lista .nada{padding:26px 14px;text-align:center;color:var(--gris);font-size:13px}
+
+/* ---------- avance / supervisor ---------- */
+.cortes{display:flex;gap:7px;overflow-x:auto;padding:2px 14px 12px;scrollbar-width:none;margin:0 -14px}
+.cortes::-webkit-scrollbar{display:none}
+.corte-chip{flex:none;border:1.5px solid var(--linea);background:#fff;border-radius:11px;padding:8px 11px;cursor:pointer;text-align:left;min-width:104px}
+.corte-chip .n{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gris)}
+.corte-chip .f{font-size:13.5px;font-weight:800;letter-spacing:-.01em}
+.corte-chip .t{font-size:10px;color:var(--gris);font-weight:700}
+.corte-chip.on{background:var(--verde-osc);border-color:var(--verde-osc);color:#fff}
+.corte-chip.on .n,.corte-chip.on .t{color:var(--lima)}
+.corte-chip.hoy{border-color:var(--lima);border-width:2px}
+
+.barra-av{height:9px;border-radius:99px;background:var(--linea);overflow:hidden;margin:8px 0 4px;display:flex}
+.barra-av i{display:block;height:100%;transition:width .4s}
+.barra-av i.ok{background:linear-gradient(90deg,var(--verde),var(--lima))}
+.barra-av i.bl{background:var(--vino)}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.kpi div{background:#fff;border:1px solid var(--linea);border-radius:11px;padding:10px;text-align:center}
+.kpi .v{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.kpi .e{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gris);margin-top:1px}
+
+.grupo{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gris);margin:14px 0 7px;display:flex;align-items:center;gap:8px}
+.grupo::after{content:"";flex:1;height:1px;background:var(--linea)}
+.pdv{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--linea);border-left:4px solid var(--linea);border-radius:11px;padding:11px;margin-bottom:7px;cursor:pointer}
+.pdv.ok{border-left-color:var(--verde);background:#f2faf5}
+.pdv.parcial{border-left-color:var(--ambar);background:#fffdf4}
+.pdv.bloq{border-left-color:var(--vino);background:#fdf5f5}
+.pdv .mk{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:13px;font-weight:800;background:var(--linea);color:var(--gris)}
+.pdv.ok .mk{background:var(--verde);color:#fff}
+.pdv.parcial .mk{background:var(--ambar);color:#fff}
+.pdv.bloq .mk{background:var(--vino);color:#fff}
+.pdv .d{flex:1;min-width:0}
+.pdv .d b{display:block;font-size:13.5px;line-height:1.25}
+.pdv .d small{color:var(--gris);font-size:11.5px}
+.pdv .st{display:flex;gap:4px;flex:none}
+.st span{font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 6px;border-radius:5px;background:var(--linea);color:var(--gris)}
+.st span.si{background:var(--verde);color:#fff}
+.st span.no{background:var(--vino);color:#fff}
+.detalle{background:#fff;border:1px solid var(--linea);border-radius:11px;padding:11px;margin:-3px 0 9px;font-size:12.5px}
+.detalle .l{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #f0f4f1}
+.detalle .l:last-child{border:none}
+.detalle .l b{font-weight:800}
+.detalle .motivo{background:#fdf3f3;border-left:3px solid var(--vino);border-radius:6px;padding:8px 10px;margin-top:6px;color:#7a1f1f}
+.detalle .thumbs{display:flex;gap:6px;margin-top:8px;overflow-x:auto}
+.detalle .thumbs img{width:64px;height:64px;object-fit:cover;border-radius:7px;border:1px solid var(--linea);flex:none}
+
+table.eq{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--linea);border-radius:11px;overflow:hidden;font-size:12.5px}
+table.eq th{background:var(--verde-prof);color:#fff;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:8px;text-align:left}
+table.eq td{padding:9px 8px;border-top:1px solid var(--linea)}
+table.eq td.n,table.eq th.n{text-align:right;font-variant-numeric:tabular-nums}
+table.eq td.n{font-weight:700}
+
+.aviso{background:#fffbea;border:1px solid #f2e2a8;border-radius:10px;padding:11px 12px;font-size:12.5px;color:#6b5200;margin-bottom:12px}
+.aviso.rojo{background:#fdf3f3;border-color:#e9c4c4;color:#7a1f1f}
+.exito{position:fixed;left:50%;transform:translateX(-50%);bottom:92px;z-index:80;background:var(--verde-prof);color:#fff;padding:12px 18px;border-radius:11px;font-size:13.5px;font-weight:700;box-shadow:0 8px 30px rgba(4,51,28,.35);display:none;max-width:88%;text-align:center}
+.exito.on{display:block}
+.exito b{color:var(--lima)}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+.dash{max-width:1080px;margin:0 auto;padding:16px 16px 60px}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;background:#fff;border:1px solid var(--linea);border-radius:12px;padding:12px;margin-bottom:14px}
+.filtros .f{flex:1;min-width:150px}
+.filtros label{display:block;font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gris);margin-bottom:4px}
+.filtros select{width:100%;padding:9px 10px;border:1.5px solid var(--linea);border-radius:9px;background:#fff;font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.kpis .k{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:13px 14px;position:relative;overflow:hidden}
+.kpis .k::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--verde)}
+.kpis .k.alerta::before{background:var(--vino)}
+.kpis .k.ambar::before{background:var(--ambar)}
+.kpis .e{font-size:9.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--gris)}
+.kpis .v{font-size:25px;font-weight:800;letter-spacing:-.03em;line-height:1.15;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpis .s{font-size:11.5px;color:var(--gris);margin-top:1px}
+.panel{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:15px;margin-bottom:14px}
+.panel h3{margin:0 0 2px;font-size:14.5px;font-weight:800}
+.panel .sub{font-size:11.5px;color:var(--gris);margin-bottom:12px}
+.rejilla{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:820px){.rejilla{grid-template-columns:1fr}}
+
+.barras .b{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:9px;font-size:12.5px}
+.barras .b .et{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.barras .b .vl{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.barras .b .tr{grid-column:1/-1;height:7px;border-radius:99px;background:var(--fondo);overflow:hidden;margin-top:-4px}
+.barras .b .tr i{display:block;height:100%;background:linear-gradient(90deg,var(--verde),var(--lima));border-radius:99px}
+.barras .b.rojo .tr i{background:var(--vino)}
+.leyenda{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--gris);margin-top:10px}
+.leyenda span{display:flex;align-items:center;gap:5px}
+.leyenda i{width:10px;height:10px;border-radius:3px;display:block}
+svg.g{width:100%;height:auto;display:block;overflow:visible}
+.tabla-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pill-est{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:5px;background:rgba(0,132,61,.12);color:var(--verde-osc);white-space:nowrap}
+.pill-est.no{background:rgba(166,40,40,.12);color:var(--vino)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- pestañas del supervisor ---------- */
+.tabs{display:flex;gap:0;background:#fff;border-bottom:1px solid var(--linea);position:sticky;top:38px;z-index:37;
+  max-width:1080px;margin:0 auto;width:100%}
+.tabs .tab{flex:1;padding:12px 8px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:800;
+  color:var(--gris);border-bottom:3px solid transparent;transition:color .15s}
+.tabs .tab.on{color:var(--verde-osc);border-bottom-color:var(--verde)}
+#pDash{padding:14px 14px 0}
+#pDash .filtros select{font-size:15px}
+
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div class="login" id="pLogin" style="display:none">
+  <div class="in">
+    <div class="mk"><i></i>Eficacia Perú</div>
+    <h1>Piloto<br>Exhibe y Gana</h1>
+    <div class="sub">Relevo de stock y boletas · Canal STS Lima</div>
+    <div class="err" id="loginErr"></div>
+    <div class="campo"><label>Usuario</label>
+      <input class="entrada" id="inpUsr" placeholder="Nombre y apellido" autocapitalize="none" autocomplete="username"></div>
+    <div class="campo"><label>Contraseña</label>
+      <input class="entrada" id="inpPwd" type="password" placeholder="••••••••" autocapitalize="characters" autocomplete="current-password"></div>
+    <button class="btn lima" style="margin-top:6px" onclick="entrar()">Ingresar</button>
+    <div class="pie">La contraseña distingue mayúsculas. El usuario no.<br>Activa la ubicación del celular antes de iniciar la ruta.</div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div class="app" id="appWrap" style="display:none">
+  <header class="top">
+    <div class="top-in">
+      <div>
+        <div class="marca"><i></i>Eficacia Perú</div>
+        <h1>Piloto Exhibe y Gana</h1>
+      </div>
+      <div class="der">
+        <span class="gps" id="gpsChip"><span class="punto"></span><span id="gpsTxt">Ubicando…</span></span>
+        <span class="usr"><b id="usrNom">—</b><button onclick="salir()">Salir</button></span>
+      </div>
+    </div>
+  </header>
+  <div class="barra-corte" id="barraCorte"></div>
+  <div class="barra-ctx" id="barraCtx"></div>
+  <div class="tabs" id="tabsSup" style="display:none">
+    <button class="tab on" id="tabAvance" onclick="irSup()">Avance por corte</button>
+    <button class="tab" id="tabDash" onclick="irDash()">Análisis</button>
+  </div>
+
+  <!-- ---------- INICIO ---------- -->
+  <section class="pantalla" id="pInicio">
+    <div class="aviso rojo" id="avisoPend" style="display:none">
+      <b>Hay <span id="nPend">0</span> relevo(s) guardados en este celular que no llegaron al servidor.</b><br>
+      Envíalos ahora con buena señal. Las fotos ya están en tu galería.
+      <button class="btn alerta chico" style="margin-top:9px" id="btnPend" onclick="reenviarPendientes()">⬆ Enviar ahora</button>
+    </div>
+    <div class="aviso" id="avisoModo" style="display:none">
+      <b>Modo local.</b> Aún no se ha conectado el servidor: los relevos quedan en este equipo y las fotos se descargan a la galería. Configura <code>API_URL</code> en <code>assets/data.js</code> para centralizar la información.
+    </div>
+    <div class="titulo"><span class="paso">Paso 1</span><h2>Selecciona el PDV</h2></div>
+    <div class="card">
+      <div class="campo"><label>Cliente / PDV <span class="req">*</span></label>
+        <button class="selector vacio" id="btnCliente" onclick="abrirClientes()">
+          <div class="v"><b id="cliNom">Buscar cliente…</b><small id="cliSub">Tu cartera asignada</small></div><span class="fl">▾</span>
+        </button>
+      </div>
+    </div>
+    <div id="fichaCliente"></div>
+    <div id="modulos" style="display:none">
+      <div class="titulo" style="margin-top:16px"><span class="paso">Paso 2</span><h2>¿Qué vas a relevar?</h2></div>
+      <button class="modulo" id="modStock" onclick="irStock()">
+        <div class="ic a">📦</div><div><b>Relevo de stock</b><small>Foto de almacén + producto, lote y vencimiento</small></div><span class="fl">›</span></button>
+      <button class="modulo" id="modBoleta" onclick="irBoleta()">
+        <div class="ic b">🧾</div><div><b>Relevo de boletas</b><small>Foto de boleta + SKU, unidades y soles</small></div><span class="fl">›</span></button>
+    </div>
+    <div class="titulo" style="margin-top:18px"><span class="paso">Avance</span><h2 style="font-size:16px" id="tituloCartera">Mi cartera</h2></div>
+    <div id="miAvance"></div>
+    <div style="height:8px"></div>
+  </section>
+
+  <!-- ---------- STOCK ---------- -->
+  <section class="pantalla" id="pStock">
+    <div class="titulo"><span class="paso">Stock</span><h2>Relevo de stock</h2></div>
+
+    <div class="card">
+      <h3>1. Permiso del cliente</h3>
+      <p class="ayuda">Antes de relevar: ¿el cliente autorizó revisar el stock físico en el almacén?</p>
+      <div class="permiso">
+        <button class="si" id="perSiSt" onclick="setPermiso('stock',true)">Sí permitió<small>Continúo con el relevo</small></button>
+        <button class="no" id="perNoSt" onclick="setPermiso('stock',false)">No permitió<small>Registro el motivo</small></button>
+      </div>
+    </div>
+
+    <!-- NO permitió -->
+    <div id="bloqueNoSt" style="display:none">
+      <div class="card" style="border-color:var(--vino)">
+        <h3 style="color:var(--vino)">Motivo de la no ejecución</h3>
+        <p class="ayuda">Este registro cuenta como visita realizada y queda visible para el supervisor.</p>
+        <div class="campo"><label>Motivo <span class="req">*</span></label>
+          <select class="entrada" id="selMotivoSt"></select></div>
+        <div class="campo"><label>Detalle de lo ocurrido <span class="req">*</span></label>
+          <textarea class="entrada" id="txtDetalleSt" placeholder="Explica qué pasó, con quién hablaste y si quedó algún compromiso para la próxima visita."></textarea></div>
+        <div class="campo"><label>Foto de evidencia (opcional)</label>
+          <div id="evidSt"></div>
+          <div class="foto-tile" onclick="capturarEvidencia('stock')"><div class="ico">📷</div><b>Tomar foto</b><small>Fachada del PDV o almacén cerrado</small></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SÍ permitió -->
+    <div id="bloqueSiSt" style="display:none">
+      <div class="card">
+        <h3>2. Foto del almacén</h3>
+        <p class="ayuda">Toma la foto de las cajas en el almacén para evidenciar la compra. Hasta 3 fotos.</p>
+        <div id="fotosAlm"></div>
+        <div class="foto-tile" id="tileAlm" onclick="capturar('almacen')">
+          <div class="ico">📷</div><b>Tomar foto del almacén</b><small>Se sella con cliente, mercado, fecha, hora y GPS</small></div>
+      </div>
+      <div class="card">
+        <h3>3. Detalle de producto</h3>
+        <p class="ayuda">Un registro por SKU. Todos los campos son obligatorios.</p>
+        <div class="campo"><label>SKU <span class="req">*</span></label>
+          <button class="selector vacio" id="btnSkuStock" onclick="abrirSKU('stock')">
+            <div class="v"><b id="skuStockNom">Buscar SKU…</b><small>Escribe parte del nombre para filtrar</small></div><span class="fl">▾</span></button></div>
+        <div class="fila2">
+          <div class="campo"><label>Cantidad (UND) <span class="req">*</span></label><input class="entrada num" id="inpCantStock" type="number" inputmode="numeric" min="0" placeholder="0"></div>
+          <div class="campo"><label>N° de lote <span class="req">*</span></label><input class="entrada" id="inpLote" placeholder="Ej. L2439A"></div>
+        </div>
+        <div class="campo"><label>Fecha de vencimiento <span class="req">*</span></label><input class="entrada num" id="inpVence" type="date"></div>
+        <div class="campo"><label>Foto del producto <span class="req">*</span></label>
+          <div id="fotoProdWrap"></div>
+          <div class="foto-tile" id="tileProd" onclick="capturar('producto')"><div class="ico">🧴</div><b>Tomar foto del producto</b><small>Empaque visible con lote legible</small></div></div>
+        <button class="btn lima" onclick="agregarStock()">＋ Agregar a la lista</button>
+      </div>
+      <div class="titulo"><h2 style="font-size:15px">Productos relevados (<span id="nStock">0</span>)</h2></div>
+      <div id="listaStock"><div class="vacio">Aún no agregas productos.</div></div>
+    </div>
+    <div style="height:10px"></div>
+  </section>
+
+  <!-- ---------- BOLETAS ---------- -->
+  <section class="pantalla" id="pBoleta">
+    <div class="titulo"><span class="paso">Boletas</span><h2>Relevo de boletas</h2></div>
+
+    <div class="card">
+      <h3>1. Disponibilidad de boletas</h3>
+      <p class="ayuda">¿El cliente tiene boletas de compra para relevar y permite registrarlas?</p>
+      <div class="permiso">
+        <button class="si" id="perSiBo" onclick="setPermiso('boleta',true)">Sí tiene<small>Continúo con el relevo</small></button>
+        <button class="no" id="perNoBo" onclick="setPermiso('boleta',false)">No tiene<small>Registro el motivo</small></button>
+      </div>
+    </div>
+
+    <div id="bloqueNoBo" style="display:none">
+      <div class="card" style="border-color:var(--vino)">
+        <h3 style="color:var(--vino)">Motivo por el que no hay boletas</h3>
+        <p class="ayuda">Indica si no compró, si compró y no la conserva, o si no autoriza mostrarla.</p>
+        <div class="campo"><label>Motivo <span class="req">*</span></label>
+          <select class="entrada" id="selMotivoBo"></select></div>
+        <div class="campo"><label>Detalle de lo ocurrido <span class="req">*</span></label>
+          <textarea class="entrada" id="txtDetalleBo" placeholder="Ej: no compró esta quincena porque aún tiene stock del pedido anterior; el distribuidor no pasó por la zona; etc."></textarea></div>
+        <div class="campo"><label>Foto de evidencia (opcional)</label>
+          <div id="evidBo"></div>
+          <div class="foto-tile" onclick="capturarEvidencia('boleta')"><div class="ico">📷</div><b>Tomar foto</b><small>Evidencia de la situación</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="bloqueSiBo" style="display:none">
+      <div class="card">
+        <h3>2. Foto de la boleta</h3>
+        <p class="ayuda">Encuadra la boleta completa: cabecera, detalle y total.</p>
+        <div id="fotosBol"></div>
+        <div class="foto-tile" id="tileBol" onclick="capturar('boleta')"><div class="ico">🧾</div><b>Tomar foto de la boleta</b><small>Se sella con cliente, mercado, fecha, hora y GPS</small></div>
+        <div class="fila2" style="margin-top:12px">
+          <div class="campo"><label>N° de boleta</label><input class="entrada num" id="inpNumBol" placeholder="Ej. B001-45213"></div>
+          <div class="campo"><label>Fecha de la boleta</label><input class="entrada num" id="inpFechaBol" type="date"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>3. Productos de nuestro portafolio</h3>
+        <p class="ayuda">Registra solo los SKU del portafolio que figuran en la boleta.</p>
+        <div class="campo"><label>SKU <span class="req">*</span></label>
+          <button class="selector vacio" id="btnSkuBol" onclick="abrirSKU('boleta')">
+            <div class="v"><b id="skuBolNom">Buscar SKU…</b><small>Escribe parte del nombre para filtrar</small></div><span class="fl">▾</span></button></div>
+        <div class="fila2">
+          <div class="campo"><label>Cantidad (UND) <span class="req">*</span></label><input class="entrada num" id="inpCantBol" type="number" inputmode="numeric" min="0" placeholder="0"></div>
+          <div class="campo"><label>Importe (S/) <span class="req">*</span></label><input class="entrada num" id="inpMonto" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div>
+        </div>
+        <button class="btn lima" onclick="agregarBoleta()">＋ Agregar a la boleta</button>
+      </div>
+      <div class="total">
+        <div><div class="et">Unidades</div><div class="vl num" id="totUnd">0</div></div>
+        <div class="der"><div class="et">Compra relevada</div><div class="vl num" id="totSol">S/ 0.00</div></div>
+      </div>
+      <div id="listaBol"><div class="vacio">Aún no agregas productos de la boleta.</div></div>
+    </div>
+    <div style="height:10px"></div>
+  </section>
+
+  <!-- ---------- SUPERVISOR ---------- -->
+  <section class="pantalla" id="pSup">
+    <div class="titulo"><span class="paso">Supervisión</span><h2>Avance por corte</h2></div>
+    <div class="cortes" id="cortesChips"></div>
+    <div class="card" style="padding:13px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <b id="supCorteTit" style="font-size:14px">—</b>
+        <span class="num" id="supPct" style="font-weight:800;color:var(--verde)">0%</span>
+      </div>
+      <div class="barra-av" id="supBarra"></div>
+      <div style="font-size:11.5px;color:var(--gris)" id="supSub">—</div>
+    </div>
+    <div class="kpi" id="supKpi"></div>
+    <div class="grupo">Equipo en campo</div>
+    <div id="supEquipo"></div>
+    <div class="grupo">Cobertura por PDV</div>
+    <div id="supPdv"></div>
+    <div style="height:10px"></div>
+  </section>
+  <!-- ---------- ANÁLISIS ---------- -->
+  <section class="pantalla" id="pDash">
+<div class="dash" id="dashWrap" style="padding:0">
+    <div class="titulo"><span class="paso">Análisis</span><h2>Resultados del piloto</h2>
+      <span id="estado" style="margin-left:auto;font-size:11.5px;color:var(--gris);font-weight:600">—</span></div>
+
+  <div class="aviso" id="avisoModo" style="display:none">
+    <b>Modo local.</b> El dashboard está leyendo los datos guardados en este equipo. Configura <code>API_URL</code> en <code>assets/data.js</code> para consolidar los relevos de las tres mercaderistas.
+  </div>
+
+  <div class="filtros">
+    <div class="f"><label>Corte</label><select id="fCorte"></select></div>
+    <div class="f"><label>Mercado</label><select id="fMercado"></select></div>
+    <div class="f"><label>Mercaderista</label><select id="fMerc"></select></div>
+    <div class="f"><label>Marca</label><select id="fMarca"></select></div>
+    <div class="f" style="max-width:130px;display:flex;align-items:flex-end;gap:8px">
+      <button class="btn sec chico" onclick="recargar()">↻ Actualizar</button>
+    </div>
+    <div class="f" style="max-width:130px;display:flex;align-items:flex-end">
+      <button class="btn pri chico" onclick="exportarTodo()">⬇ CSV</button>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="rejilla">
+    <div class="panel">
+      <h3>Cobertura por corte</h3>
+      <div class="sub">Cada barra es el 100% de los PDV del filtro en ese corte.</div>
+      <div id="gEvolucion"></div>
+    </div>
+    <div class="panel">
+      <h3>Compra relevada por corte</h3>
+      <div class="sub">Soles levantados de boletas. Solo cortes con relevo de boletas.</div>
+      <div id="gCompra"></div>
+    </div>
+  </div>
+
+  <div class="rejilla">
+    <div class="panel">
+      <h3>Top SKU en stock</h3>
+      <div class="sub">Unidades físicas relevadas en almacén.</div>
+      <div id="topStock"></div>
+    </div>
+    <div class="panel">
+      <h3>Top SKU en boletas</h3>
+      <div class="sub">Soles comprados al distribuidor.</div>
+      <div id="topBoleta"></div>
+    </div>
+  </div>
+
+  <div class="rejilla">
+    <div class="panel">
+      <h3>Mix por marca</h3>
+      <div class="sub">Participación en unidades relevadas.</div>
+      <div id="mixMarca"></div>
+    </div>
+    <div class="panel">
+      <h3>Cobertura por mercado</h3>
+      <div class="sub">Porcentaje de oportunidades efectivamente relevadas.</div>
+      <div id="mercados"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Desempeño del equipo</h3>
+    <div class="sub">Relevos efectivos, casos justificados y volumen levantado.</div>
+    <div id="equipo"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Motivos de no ejecución</h3>
+    <div class="sub">Por qué no se pudo relevar stock o por qué el PDV no tiene boletas.</div>
+    <div id="motivos"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Alerta de vencimientos</h3>
+    <div class="sub">Lotes relevados con menos de 6 meses de vida útil.</div>
+    <div id="vencimientos"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Últimos registros</h3>
+    <div class="sub">Detalle de las visitas más recientes del filtro.</div>
+    <div id="detalle"></div>
+  </div>
+</div>
+  </section>
+</div>
+
+<div class="acciones"><div class="acciones-in" id="accionesIn"></div></div>
+<div class="sombra-fondo" id="fondoHoja" onclick="cerrarHoja()"></div>
+<div class="hoja" id="hoja">
+  <div class="hoja-top">
+    <div class="h"><b id="hojaTitulo">Buscar</b><button onclick="cerrarHoja()">Cerrar</button></div>
+    <div class="buscador"><span class="lupa">🔍</span><input id="hojaInput" placeholder="Escribe parte del nombre…" autocomplete="off"></div>
+    <div class="chips" id="hojaChips"></div>
+  </div>
+  <div class="lista" id="hojaLista"></div>
+</div>
+<div class="exito" id="toast"></div>
+<input type="file" accept="image/*" capture="environment" id="fileInput" style="display:none">
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}</script>
+<script>
+/* ============================================================
+   PILOTO EXHIBE Y GANA · Datos maestros y configuración
+   Editar SOLO este archivo para altas/bajas y parámetros.
+   ============================================================ */
+
+
+
+/* --- 2. Accesos ---------------------------------------------- */
+const USUARIOS = [
+  {u:"ROSARIO FUENTES", p:"MERCASTS2",  rol:"merc", nom:"Rosario Fuentes"},
+  {u:"KAREN RIOS",      p:"MERCASTS4",  rol:"merc", nom:"Karen Rios"},
+  {u:"SANDRA MOGOLLON", p:"MERCASTS3",  rol:"merc", nom:"Sandra Mogollón"},
+  {u:"SUPERVISOR",      p:"SUPEXG2026", rol:"sup",  nom:"Supervisor STS"}
+];
+
+/* --- 3. Cortes del piloto (2026) ------------------------------ */
+const CORTES = [
+  {n:1,  ini:"2026-08-29", fin:"2026-08-31", tipo:"AMBOS", et:"29/08 – 31/08"},
+  {n:2,  ini:"2026-09-04", fin:"2026-09-05", tipo:"STOCK", et:"04/09 – 05/09"},
+  {n:3,  ini:"2026-09-11", fin:"2026-09-12", tipo:"AMBOS", et:"11/09 – 12/09"},
+  {n:4,  ini:"2026-09-18", fin:"2026-09-19", tipo:"STOCK", et:"18/09 – 19/09"},
+  {n:5,  ini:"2026-09-25", fin:"2026-09-26", tipo:"AMBOS", et:"25/09 – 26/09"},
+  {n:6,  ini:"2026-10-02", fin:"2026-10-03", tipo:"AMBOS", et:"02/10 – 03/10"},
+  {n:7,  ini:"2026-10-09", fin:"2026-10-10", tipo:"STOCK", et:"09/10 – 10/10"},
+  {n:8,  ini:"2026-10-16", fin:"2026-10-17", tipo:"AMBOS", et:"16/10 – 17/10"},
+  {n:9,  ini:"2026-10-23", fin:"2026-10-24", tipo:"STOCK", et:"23/10 – 24/10"},
+  {n:10, ini:"2026-10-30", fin:"2026-10-31", tipo:"AMBOS", et:"30/10 – 31/10"}
+];
+const ETIQ_TIPO = {AMBOS:"Stock y Boletas", STOCK:"Solo Stock"};
+
+/* --- 4. Motivos de no ejecución ------------------------------- */
+const MOTIVOS_STOCK = [
+  "No autoriza el ingreso al almacén",
+  "Almacén cerrado / no hay llave",
+  "Dueño o encargado ausente",
+  "No permite tomar fotos",
+  "PDV cerrado el día de la visita",
+  "Cliente sin tiempo / mucha afluencia",
+  "Mercadería aún no llega del distribuidor",
+  "Otro motivo (detallar)"
+];
+const MOTIVOS_BOLETA = [
+  "No realizó compra en el periodo",
+  "Compró pero no conserva la boleta",
+  "No autoriza mostrar la boleta",
+  "La boleta la tiene el contador / administración",
+  "Compra pendiente de facturación",
+  "PDV cerrado el día de la visita",
+  "Otro motivo (detallar)"
+];
+
+const SKUS = [{"n": "Shampoo Original x 400ml", "m": "Johnson's Baby", "id": "SKU001"}, {"n": "Shampoo Original x 750ml", "m": "Johnson's Baby", "id": "SKU002"}, {"n": "Shampoo Original x 200ml", "m": "Johnson's Baby", "id": "SKU003"}, {"n": "Shampoo Original x 100ml", "m": "Johnson's Baby", "id": "SKU004"}, {"n": "Shampoo Original Display x 10ml", "m": "Johnson's Baby", "id": "SKU005"}, {"n": "Shampoo Hidratación Intensa x 400ml", "m": "Johnson's Baby", "id": "SKU006"}, {"n": "Shampoo Manzanilla x 100ml", "m": "Johnson's Baby", "id": "SKU007"}, {"n": "Shampoo Manzanilla x 200ml", "m": "Johnson's Baby", "id": "SKU008"}, {"n": "Shampoo Manzanilla x 400ml", "m": "Johnson's Baby", "id": "SKU009"}, {"n": "Shampoo Manzanilla x 750ml", "m": "Johnson's Baby", "id": "SKU010"}, {"n": "Shampoo Manzanilla x 1000ml", "m": "Johnson's Baby", "id": "SKU011"}, {"n": "Shampoo Romero y Melanina x 750ml", "m": "Johnson's Baby", "id": "SKU012"}, {"n": "Acondicionador Manzanilla x 400ml", "m": "Johnson's Baby", "id": "SKU013"}, {"n": "Shampoo Manzanilla Display x 10ml", "m": "Johnson's Baby", "id": "SKU014"}, {"n": "Shampoo Hidratación Intensa x 750ml", "m": "Johnson's Baby", "id": "SKU015"}, {"n": "Shampoo Fragancia Prolongada x750ml", "m": "Johnson's Baby", "id": "SKU016"}, {"n": "Shampoo Gotas de Brillo x 200ml", "m": "Johnson's Baby", "id": "SKU017"}, {"n": "Shampoo Gotas de Brillo x 400ml", "m": "Johnson's Baby", "id": "SKU018"}, {"n": "Shampoo Gotas de Brillo x 750ml", "m": "Johnson's Baby", "id": "SKU019"}, {"n": "Spray Gotas de Brillo x 200ml", "m": "Johnson's Baby", "id": "SKU020"}, {"n": "Acondicionador Original x 400ml", "m": "Johnson's Baby", "id": "SKU021"}, {"n": "Acondicionador Hidratación Int x 400ml", "m": "Johnson's Baby", "id": "SKU022"}, {"n": "Acondicionador Hidratación Int x 200ml", "m": "Johnson's Baby", "id": "SKU023"}, {"n": "Crema para Peinar Hidratación Int x 200ml", "m": "Johnson's Baby", "id": "SKU024"}, {"n": "Shampoo x 100ml Jetpack + Polvo de Almidon", "m": "Johnson's Baby", "id": "SKU025"}, {"n": "Shampoo Fragancia Prolongada x200ml", "m": "Johnson's Baby", "id": "SKU026"}, {"n": "Shampoo Fragancia Prolongada x400ml", "m": "Johnson's Baby", "id": "SKU027"}, {"n": "Acondicionador Fragancia Prol x 200ml", "m": "Johnson's Baby", "id": "SKU028"}, {"n": "Spray Fragancia Prolongada x 200ml", "m": "Johnson's Baby", "id": "SKU029"}, {"n": "Acondicionador Gotas de Brillo x 400ml", "m": "Johnson's Baby", "id": "SKU030"}, {"n": "Acondicionador Fuerza y Vitamina x 400ml", "m": "Johnson's Baby", "id": "SKU031"}, {"n": "Acondicionador Fuerza y Vitamina x 200ml", "m": "Johnson's Baby", "id": "SKU032"}, {"n": "Shampoo Fuerza y Vitamina x 200ml", "m": "Johnson's Baby", "id": "SKU033"}, {"n": "Shampoo Fuerza y Vitamina x 400ml", "m": "Johnson's Baby", "id": "SKU034"}, {"n": "Shampoo Fuerza y Vitamina x 750ml", "m": "Johnson's Baby", "id": "SKU035"}, {"n": "Shampoo Fuerza y Vitamina x 1000ml", "m": "Johnson's Baby", "id": "SKU036"}, {"n": "Spray Fuerza y vitamina x 200ml", "m": "Johnson's Baby", "id": "SKU037"}, {"n": "Shampoo Gotas de Brillo x 750ml + Acondicionador x200ml", "m": "Johnson's Baby", "id": "SKU038"}, {"n": "Shampoo Original x 750ml + 200ml", "m": "Johnson's Baby", "id": "SKU039"}, {"n": "Shampoo Manzanilla x 750ml + 200ml", "m": "Johnson's Baby", "id": "SKU040"}, {"n": "Shampoo Original x 1000ml", "m": "Johnson's Baby", "id": "SKU041"}, {"n": "Shampoo Fragancia Prolongada x750ml + Acondicionador x200ml", "m": "Johnson's Baby", "id": "SKU042"}, {"n": "Acondicionador Gotas de Brillo x 200ml", "m": "Johnson's Baby", "id": "SKU043"}, {"n": "Shampoo Gotas de Brillo Display x 25ml", "m": "Johnson's Baby", "id": "SKU044"}, {"n": "Shampoo Hidratación Intensa x 1000ml", "m": "Johnson's Baby", "id": "SKU045"}, {"n": "Shampoo Gotas de Brillo x 1000ml", "m": "Johnson's Baby", "id": "SKU046"}, {"n": "Shampoo Manzanilla Display x 25ml", "m": "Johnson's Baby", "id": "SKU047"}, {"n": "Shampoo Original Display x 25ml", "m": "Johnson's Baby", "id": "SKU048"}, {"n": "Baño Líquido Recién Nacido x 200ml", "m": "Johnson's Baby", "id": "SKU049"}, {"n": "Baño Líquido Glicerina x 200ml", "m": "Johnson's Baby", "id": "SKU050"}, {"n": "Baño Líquido Glicerina x 400ml", "m": "Johnson's Baby", "id": "SKU051"}, {"n": "Baño Líquido Antes de Dormir x 200ml", "m": "Johnson's Baby", "id": "SKU052"}, {"n": "Baño Líquido Avena x 400ml", "m": "Johnson's Baby", "id": "SKU053"}, {"n": "Baño Líquido Libre de Gérmenes x 200ml", "m": "Johnson's Baby", "id": "SKU054"}, {"n": "Baño Líquido Libre de Gérmenes x 400ml", "m": "Johnson's Baby", "id": "SKU055"}, {"n": "Baño Líquido Hidratación Intensa x 400ml", "m": "Johnson's Baby", "id": "SKU056"}, {"n": "Crema Líquida Original (Rosa) x 200ml", "m": "Johnson's Baby", "id": "SKU057"}, {"n": "Crema Líquida Original (Rosa) x 400ml", "m": "Johnson's Baby", "id": "SKU058"}, {"n": "Crema Líquida Recién Nacido x 200ml", "m": "Johnson's Baby", "id": "SKU059"}, {"n": "Crema Líquida Antes de Dormir x 200ml", "m": "Johnson's Baby", "id": "SKU060"}, {"n": "Crema Líquida Avena x 400ml", "m": "Johnson's Baby", "id": "SKU061"}, {"n": "Crema Líquida Hidratación Intensa x 400ml", "m": "Johnson's Baby", "id": "SKU062"}, {"n": "Loción Anti Mosquitos x 200ml", "m": "Johnson's Baby", "id": "SKU063"}, {"n": "Crema Líquida Original (Rosa) x 800ml", "m": "Johnson's Baby", "id": "SKU064"}, {"n": "Crema Líquida Avena x 800ml", "m": "Johnson's Baby", "id": "SKU065"}, {"n": "Aceite Original x 50ml", "m": "Johnson's Baby", "id": "SKU066"}, {"n": "Aceite Original x 100ml", "m": "Johnson's Baby", "id": "SKU067"}, {"n": "Aceite Original x 300ml", "m": "Johnson's Baby", "id": "SKU068"}, {"n": "Aceite Aloe x 100ml", "m": "Johnson's Baby", "id": "SKU069"}, {"n": "Aceite Antes de Dormir x 100ml", "m": "Johnson's Baby", "id": "SKU070"}, {"n": "Aceite Antes de Dormir x 300ml", "m": "Johnson's Baby", "id": "SKU071"}, {"n": "Aceite Recién Nacido x 100ml", "m": "Johnson's Baby", "id": "SKU072"}, {"n": "Talco Polvo de Almidón x 200gr", "m": "Johnson's Baby", "id": "SKU073"}, {"n": "Talco Polvo de Almidón x 400gr", "m": "Johnson's Baby", "id": "SKU074"}, {"n": "Talco Antes de Dormir x 400gr", "m": "Johnson's Baby", "id": "SKU075"}, {"n": "Talco Antes de Dormir x 200gr", "m": "Johnson's Baby", "id": "SKU076"}, {"n": "Talco Original x 400gr", "m": "Johnson's Baby", "id": "SKU077"}, {"n": "Talco Original x 100gr", "m": "Johnson's Baby", "id": "SKU078"}, {"n": "Talco Original x 200gr", "m": "Johnson's Baby", "id": "SKU079"}, {"n": "Talco Original x 600gr", "m": "Johnson's Baby", "id": "SKU080"}, {"n": "Colonia Sonrisas (Amarilla) x 100ml", "m": "Johnson's Baby", "id": "SKU081"}, {"n": "Colonia Sonrisas (Amarilla) x 200ml", "m": "Johnson's Baby", "id": "SKU082"}, {"n": "Colonia Antes de Dormir (Violeta) x 200ml", "m": "Johnson's Baby", "id": "SKU083"}, {"n": "Jabón Baby Antes de Dormir x 75gr", "m": "Johnson's Baby", "id": "SKU084"}, {"n": "Jabón Baby Original x 75gr", "m": "Johnson's Baby", "id": "SKU085"}, {"n": "Jabón Baby Avena x 75gr", "m": "Johnson's Baby", "id": "SKU086"}, {"n": "Jabón Baby Humectante x 75gr", "m": "Johnson's Baby", "id": "SKU087"}, {"n": "Jabón Baby Glicerina x 80gr", "m": "Johnson's Baby", "id": "SKU088"}, {"n": "Jabón Baby Libre de Gérmenes x 110g (Tripack)", "m": "Johnson's Baby", "id": "SKU089"}, {"n": "Jabón Baby Avena x 110gr (Tripack)", "m": "Johnson's Baby", "id": "SKU090"}, {"n": "Jabón Baby Original x 110gr (Tripack)", "m": "Johnson's Baby", "id": "SKU091"}, {"n": "Jabón Baby Original x 110gr", "m": "Johnson's Baby", "id": "SKU092"}, {"n": "Jabón Baby Humectante x 110gr", "m": "Johnson's Baby", "id": "SKU093"}, {"n": "Jabón Baby Humectante x 110gr (Tripack)", "m": "Johnson's Baby", "id": "SKU094"}, {"n": "Jabón Baby Antes de Dormir x 110gr (Tripack)", "m": "Johnson's Baby", "id": "SKU095"}, {"n": "JB Estuche Grande", "m": "Johnson's Baby", "id": "SKU096"}, {"n": "JB Estuche Pequeño", "m": "Johnson's Baby", "id": "SKU097"}, {"n": "JB Estuche Recien Nacido", "m": "Johnson's Baby", "id": "SKU098"}, {"n": "Cotonetes x 75u", "m": "Johnson's Baby", "id": "SKU099"}, {"n": "Cotonetes x 300u", "m": "Johnson's Baby", "id": "SKU100"}, {"n": "Cotonetes Pote x 150u", "m": "Johnson's Baby", "id": "SKU101"}, {"n": "Protectores Mamarios x 24", "m": "Johnson's Baby", "id": "SKU102"}, {"n": "Desitin Creamy x 57gr", "m": "Desitin", "id": "SKU103"}, {"n": "Desitin x 28gr", "m": "Desitin", "id": "SKU104"}, {"n": "Desitin x 113gr", "m": "Desitin", "id": "SKU105"}, {"n": "Jabón Adultos Iluminadora x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU106"}, {"n": "Jabón Adultos Rosas y Sándalo x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU107"}, {"n": "Jabón Adultos Avena x 110gr (Sixpack)", "m": "Johnson's Adultos", "id": "SKU108"}, {"n": "Jabón Adultos Renovadora Granada x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU109"}, {"n": "Jabón Adultos Original x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU110"}, {"n": "Jabón Adultos Avena x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU111"}, {"n": "Jabón Adultos Original Avena x 110gr (Sixpack)", "m": "Johnson's Adultos", "id": "SKU112"}, {"n": "Jabón Adultos Refrescante Uva x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU113"}, {"n": "Jabón Adultos Antibacterial UF x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU114"}, {"n": "Jabón Adultos Antibacterial x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU115"}, {"n": "Jabón Adultos Aloe x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU116"}, {"n": "Neko Extra Protección x 75gr", "m": "Neko", "id": "SKU117"}, {"n": "Neko Extra Suave x 75gr", "m": "Neko", "id": "SKU118"}, {"n": "Neko Avena x 75gr", "m": "Neko", "id": "SKU119"}, {"n": "Neko Aloe x 75gr", "m": "Neko", "id": "SKU120"}, {"n": "Neko Extra Protección x 110gr", "m": "Neko", "id": "SKU121"}, {"n": "Neko Extra Suave x 110gr", "m": "Neko", "id": "SKU122"}, {"n": "Neko Avena x 110gr", "m": "Neko", "id": "SKU123"}, {"n": "Neko Aloe x 110gr", "m": "Neko", "id": "SKU124"}, {"n": "Hilo Dental Reach Menta x 50mts", "m": "Reach", "id": "SKU125"}, {"n": "Hilo Dental Reach Regular x 50mts", "m": "Reach", "id": "SKU126"}, {"n": "Hilo Dental Reach Menta x 100mts", "m": "Reach", "id": "SKU127"}, {"n": "Listerine Cool Mint x 180ml", "m": "Listerine", "id": "SKU128"}, {"n": "Listerine Cool Mint x 500ml", "m": "Listerine", "id": "SKU129"}, {"n": "Listerine Cool Mint x 1000ml", "m": "Listerine", "id": "SKU130"}, {"n": "Listerine Cool Mint Zero x 1500ml", "m": "Listerine", "id": "SKU131"}, {"n": "Listerine Cool Mint Zero x 1000ml", "m": "Listerine", "id": "SKU132"}, {"n": "Listerine Cool Mint Zero x 180ml", "m": "Listerine", "id": "SKU133"}, {"n": "Listerine Cool Mint Zero x 500ml", "m": "Listerine", "id": "SKU134"}, {"n": "Listerine Antisarro x 180ml", "m": "Listerine", "id": "SKU135"}, {"n": "Listerine Antisarro x 500ml", "m": "Listerine", "id": "SKU136"}, {"n": "Listerine Antisarro x 1000ml", "m": "Listerine", "id": "SKU137"}, {"n": "Listerine Total Care x 180ml", "m": "Listerine", "id": "SKU138"}, {"n": "Listerine Total Care x 500ml", "m": "Listerine", "id": "SKU139"}, {"n": "Listerine Total Care x 1000ml", "m": "Listerine", "id": "SKU140"}, {"n": "Listerine Dientes & Encías x 180ml", "m": "Listerine", "id": "SKU141"}, {"n": "Listerine Dientes & Encías x 500ml", "m": "Listerine", "id": "SKU142"}, {"n": "Listerine Total Care Zero x 180ml", "m": "Listerine", "id": "SKU143"}, {"n": "Listerine Total Care Zero x 500ml", "m": "Listerine", "id": "SKU144"}, {"n": "Listerine Total Care Zero x 1500ml", "m": "Listerine", "id": "SKU145"}, {"n": "Listerine Anticaries Zero x 180ml", "m": "Listerine", "id": "SKU146"}, {"n": "Listerine Anticaries Zero x 500ml", "m": "Listerine", "id": "SKU147"}, {"n": "Listerine Anticaries Zero x 1500ml", "m": "Listerine", "id": "SKU148"}, {"n": "Listerine Antisarro Zero x 180ml", "m": "Listerine", "id": "SKU149"}, {"n": "Listerine Antisarro Zero x 500ml", "m": "Listerine", "id": "SKU150"}, {"n": "Listerine Antisarro Zero x 1000ml", "m": "Listerine", "id": "SKU151"}, {"n": "Listerine Whitening x 236ml", "m": "Listerine", "id": "SKU152"}, {"n": "Listerine Whitening x 473ml", "m": "Listerine", "id": "SKU153"}, {"n": "Stayfree Adapt Plus Noche y Día x 8u", "m": "Stayfree", "id": "SKU154"}, {"n": "Stayfree Especial x 42u", "m": "Stayfree", "id": "SKU155"}, {"n": "Stayfree Especial x 12u", "m": "Stayfree", "id": "SKU156"}, {"n": "Stayfree Especial UF x 12u", "m": "Stayfree", "id": "SKU157"}, {"n": "Stayfree Adapt Plus C/A x 8u", "m": "Stayfree", "id": "SKU158"}, {"n": "Stayfree Adapt Plus C/A x 16u", "m": "Stayfree", "id": "SKU159"}, {"n": "Stayfree Adapt Plus UF x 8u", "m": "Stayfree", "id": "SKU160"}, {"n": "Stayfree Adapt Plus UF x 32u", "m": "Stayfree", "id": "SKU161"}, {"n": "Tampón Regular MEDIO x 8u", "m": "Stayfree", "id": "SKU162"}, {"n": "Tampón Regular SUPER x 8u", "m": "Stayfree", "id": "SKU163"}, {"n": "Daktarin 2.0% 40 mg/g GEL ORAL", "m": "Daktarin", "id": "SKU164"}, {"n": "Doloflam Extra Forte x 100u", "m": "Doloflam", "id": "SKU165"}, {"n": "Doloflam 200mg x 40u", "m": "Doloflam", "id": "SKU166"}, {"n": "Mylanta Menta x 240ml", "m": "Mylanta", "id": "SKU167"}, {"n": "Mylanta Fresa x 240ml", "m": "Mylanta", "id": "SKU168"}, {"n": "JB Estuche Grande (nuevo)", "m": "Johnson's Baby", "id": "SKU169"}, {"n": "LISTERINE MELANCIA 12X500ML EXP", "m": "Listerine", "id": "SKU170"}, {"n": "LIST CUIDADO TOTAL ZERO 6X1L", "m": "Listerine", "id": "SKU171"}, {"n": "LIST TOTAL CARE KIDS BBLST 6UX500ML F2", "m": "Listerine", "id": "SKU172"}, {"n": "DESITIN CREAMY 12 X 113 GM EXP", "m": "Desitin", "id": "SKU173"}, {"n": "JB BAÑO LIQUIDO MANZANILLA 400ML", "m": "Johnson's Baby", "id": "SKU174"}, {"n": "Johnsons Baby Shampoo 2 en 1 400ml", "m": "Johnson's Baby", "id": "SKU175"}, {"n": "JS BABY REF SH GOLD MONO 12X180ML EXP", "m": "Johnson's Baby", "id": "SKU176"}, {"n": "Johnsons Baby Shampoo original Refill (Doypack) 180ml", "m": "Johnson's Baby", "id": "SKU177"}, {"n": "Listerine Sandia x500ml", "m": "Listerine", "id": "SKU178"}, {"n": "Listerine Kids x 500ml", "m": "Listerine", "id": "SKU179"}];
+const CLIENTES = [{"id": "348", "nombre": "Andrea Precio Justo Sac", "involves": "BM VENTA Y DISTRIBUCION DE ABARRATOS / ANDREA PRECIO JUSTO", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "ESTEBAN SALMÓN # 859-CAQUETA", "mercado": "CAQUETA", "red": "MERCADO MAYORISTA", "merc": "Rosario Fuentes"}, {"id": "404", "nombre": "Inversiones Angie Y Andres Eirl /Victor Veramendi Silvestre", "involves": "INVERSIONES ANGIE Y ANDRES", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "TOMAS MOYA # 683-CAQUETA", "mercado": "CAQUETA", "red": "MERCADO MAYORISTA", "merc": "Rosario Fuentes"}, {"id": "427", "nombre": "Jerrica Mercantil Eirl", "involves": "VICOFER / JERRICA", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "AV LOS HEROES 515 PTO.48-CIUDAD DE DIOS", "mercado": "CIUDAD DE DIOS", "red": "MERCADO MAYORISTA", "merc": "Sandra Mogollón"}, {"id": "417", "nombre": "Inversiones P Y D", "involves": "INVERSIONES P Y D", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "JR. PISAGUA 940-LA PARADA", "mercado": "LA PARADA", "red": "MERCADO MAYORISTA", "merc": "Rosario Fuentes"}, {"id": "STS 43", "nombre": "Distribuidora JOPAL SAC", "involves": "DISTRIBUIDORA JOPAL SAC", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "Jr Pisagua 979", "mercado": "LA PARADA", "red": "MERCADO MAYORISTA", "merc": "Rosario Fuentes"}, {"id": "499", "nombre": "Ecovent Group Srl /Gloria Garay", "involves": "ECOVENT GROUP", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "AV. LA CULTURA 701 PASAJE C - 73-PRODUCTORES", "mercado": "PRODUCTORES", "red": "MERCADO MAYORISTA", "merc": "Karen Rios"}, {"id": "16430", "nombre": "Ecovent Group Srl", "involves": "ECOVENT GROUP SRL", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "AV. LA CULTURA 701 PASAJE A - 16-PRODUCTORES", "mercado": "PRODUCTORES", "red": "MERCADO MAYORISTA", "merc": "Karen Rios"}, {"id": "546", "nombre": "Comercial Jhire /Miguel Prez", "involves": "NEGOCIACIONES JHIRE SAC", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "AV. LA CULTURA 701 PASAJE D - 12-PRODUCTORES", "mercado": "PRODUCTORES", "red": "MERCADO MAYORISTA", "merc": "Karen Rios"}, {"id": "419", "nombre": "Inversiones Paraguall Sac - Elvira Huerto Moya", "involves": "INVERSIONES PARAGUALL", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "AV. PROLG. 1ERO DE MAYO INT. 304-UNICACHI SUR", "mercado": "UNICACHI", "red": "MERCADO MAYORISTA", "merc": "Sandra Mogollón"}];
+
+/* ============================================================
+   PILOTO EXHIBE Y GANA · Núcleo compartido (app + dashboard)
+   ============================================================ */
+
+/* ---------- utilidades ---------- */
+const $ = id => document.getElementById(id);
+const qs = s => document.querySelector(s);
+const norm = t => String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const soles = n => "S/ " + (Number(n) || 0).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const miles = n => (Number(n) || 0).toLocaleString("es-PE");
+const hoyISO = () => new Date().toISOString().slice(0, 10);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+function ahora() {
+  const d = new Date(), p = n => String(n).padStart(2, "0");
+  return { fecha: `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`, hora: `${p(d.getHours())}:${p(d.getMinutes())}`, iso: d.toISOString() };
+}
+function fechaCorta(iso) { return iso ? iso.split("-").reverse().join("/") : ""; }
+function mesesHasta(iso) {
+  if (!iso) return null;
+  return Math.round((new Date(iso) - new Date()) / (1000 * 60 * 60 * 24 * 30.44));
+}
+function toast(m) {
+  const t = $("toast"); if (!t) return;
+  t.innerHTML = m; t.classList.add("on");
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("on"), 2800);
+}
+
+/* ---------- cortes ---------- */
+function corteDe(iso) { return CORTES.find(c => iso >= c.ini && iso <= c.fin) || null; }
+function corteActivo() {
+  const h = hoyISO();
+  return corteDe(h) || CORTES.find(c => c.ini > h) || CORTES[CORTES.length - 1];
+}
+
+/* ---------- sesión ---------- */
+/* La sesión vive en localStorage: al usarse como acceso directo de
+   Chrome, cerrar la pestaña no debe expulsar a la mercaderista.   */
+const Sesion = {
+  guardar(u) { try { localStorage.setItem("eyg:sesion", JSON.stringify(u)); } catch (e) { window.__sesion = u; } },
+  leer() {
+    try { const s = localStorage.getItem("eyg:sesion"); return s ? JSON.parse(s) : (window.__sesion || null); }
+    catch (e) { return window.__sesion || null; }
+  },
+  cerrar() { try { localStorage.removeItem("eyg:sesion"); } catch (e) { } window.__sesion = null; }
+};
+function validarAcceso(usuario, clave) {
+  const f = USUARIOS.find(x => norm(x.u) === norm(usuario));
+  if (!f) return { ok: false, msg: "Usuario no reconocido. Escribe nombre y apellido." };
+  if (f.p !== clave) return { ok: false, msg: "Contraseña incorrecta. Recuerda que va en MAYÚSCULAS." };
+  return { ok: true, user: { u: f.u, nom: f.nom, rol: f.rol } };
+}
+
+/* ============================================================
+   CAPA DE DATOS
+   Con CONFIG.API_URL  -> Google Apps Script (Sheets + Drive)
+   Sin CONFIG.API_URL  -> almacenamiento local del navegador
+   ============================================================ */
+const DB = {
+  memoria: [],
+  get remoto() { return !!(CONFIG.API_URL && CONFIG.API_URL.indexOf("http") === 0); },
+
+  _local() {
+    try { return JSON.parse(localStorage.getItem("eyg:registros") || "[]"); }
+    catch (e) { return this.memoria; }
+  },
+  _localSet(arr) {
+    this.memoria = arr;
+    try { localStorage.setItem("eyg:registros", JSON.stringify(arr)); } catch (e) { }
+  },
+
+  async listar(corteN) {
+    let regs;
+    if (this.remoto) {
+      try {
+        const r = await fetch(CONFIG.API_URL + "?accion=listar" + (corteN ? "&corte=" + corteN : ""));
+        const j = await r.json();
+        regs = j.ok ? j.datos : [];
+      } catch (e) { regs = this._local(); }
+    } else regs = this._local();
+    return corteN ? regs.filter(r => Number(r.corte) === Number(corteN)) : regs;
+  },
+
+  /* reg = metadata + miniaturas ; fotos = imágenes completas (solo backend) */
+  async guardar(reg, fotos) {
+    reg.id = reg.id || uid();
+    if (this.remoto) {
+      try {
+        const r = await fetch(CONFIG.API_URL, { method: "POST", body: JSON.stringify({ accion: "guardar", reg, fotos }) });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.msg || "error");
+        return { ok: true, remoto: true };
+      } catch (e) {
+        const a = this._local(); a.push(reg); this._localSet(a);
+        return { ok: true, remoto: false, msg: "Sin conexión: guardado en el equipo. Se debe reintentar el envío." };
+      }
+    }
+    const a = this._local(); a.push(reg); this._localSet(a);
+    return { ok: true, remoto: false };
+  }
+};
+
+/* ---------- cartera asignada ---------- */
+/* Cada PDV pertenece a una mercaderista (campo "merc" en CLIENTES).
+   El supervisor ve las 9; cada mercaderista solo la suya.        */
+function carteraDe(nombre) {
+  if (!nombre || nombre === "todos") return CLIENTES.slice();
+  return CLIENTES.filter(c => norm(c.merc) === norm(nombre));
+}
+function responsableDe(idPdv) {
+  const c = CLIENTES.find(x => x.id === idPdv);
+  return c ? c.merc : "";
+}
+
+/* ---------- relevos guardados en el equipo sin enviar ---------- */
+DB.pendientes = function () { return this.remoto ? this._local() : []; };
+
+DB.reenviar = async function (avisar) {
+  const cola = this._local(); if (!cola.length) return { enviados: 0, fallados: 0 };
+  let enviados = 0; const quedan = [];
+  for (let k = 0; k < cola.length; k++) {
+    avisar && avisar(k + 1, cola.length);
+    try {
+      const r = await fetch(CONFIG.API_URL, {
+        method: "POST",
+        body: JSON.stringify({ accion: "guardar", reg: cola[k], fotos: [] })
+      });
+      const j = await r.json();
+      if (j.ok) enviados++; else quedan.push(cola[k]);
+    } catch (e) { quedan.push(cola[k]); }
+  }
+  this._localSet(quedan);
+  return { enviados, fallados: quedan.length };
+};
+
+/* ---------- estado de cobertura por PDV ---------- */
+/* estado del relevo: "OK" (relevado) | "NO" (no permitido / sin boletas) */
+function estadoPDV(regs, idPdv) {
+  const del = regs.filter(r => r.pdv === idPdv);
+  const s = del.find(r => r.tipo === "stock");
+  const b = del.find(r => r.tipo === "boleta");
+  return {
+    stock: s ? s.estado : null,
+    boleta: b ? b.estado : null,
+    regs: del
+  };
+}
+function resumenPDV(regs, cliente, corte) {
+  const soloStock = corte.tipo === "STOCK";
+  const e = estadoPDV(regs, cliente.id);
+  const stockList = e.stock !== null, bolList = soloStock ? true : e.boleta !== null;
+  const gestionado = stockList && bolList;
+  const relevado = e.stock === "OK" && (soloStock || e.boleta === "OK");
+  const bloqueado = gestionado && !relevado;
+  return { ...e, gestionado, relevado, bloqueado, parcial: !gestionado && (stockList || bolList) };
+}
+
+/* ---------- geolocalización ---------- */
+const GPS = {
+  pos: null, estado: "buscando",
+  pedir(cb) {
+    if (!navigator.geolocation) { this.estado = "error"; cb && cb(); return; }
+    navigator.geolocation.getCurrentPosition(
+      p => { this.pos = { lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy) }; this.estado = "ok"; cb && cb(); },
+      () => { this.estado = "error"; cb && cb(); },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+  },
+  texto() { return this.pos ? this.pos.lat.toFixed(6) + ", " + this.pos.lng.toFixed(6) + "  (±" + this.pos.acc + " m)" : "GPS NO DISPONIBLE"; },
+  etiqueta() { return this.estado === "ok" ? "GPS ±" + this.pos.acc + " m" : this.estado === "error" ? "GPS denegado" : "Ubicando…"; }
+};
+
+/* ---------- sello de fotos ---------- */
+function cargarImg(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = r.result; };
+    r.onerror = rej; r.readAsDataURL(file);
+  });
+}
+async function sellarFoto(file, etiqueta, ctx) {
+  const img = await cargarImg(file), maxW = 1200, k = Math.min(1, maxW / img.width);
+  const w = Math.round(img.width * k), h = Math.round(img.height * k);
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const x = c.getContext("2d"); x.drawImage(img, 0, 0, w, h);
+  const t = ahora();
+  const lineas = [
+    ctx.cliente.nombre.toUpperCase(),
+    "Mercado: " + ctx.cliente.mercado + "   ·   PDV " + ctx.cliente.id,
+    t.fecha + "   ·   " + t.hora + " h",
+    "GPS " + GPS.texto(),
+    "Mercaderista: " + ctx.usuario + "   ·   Corte " + ctx.corte
+  ];
+  const F = Math.max(12, Math.round(w * 0.0235)), lh = Math.round(F * 1.42), pad = Math.round(F * 0.95);
+  const barra = pad * 2 + Math.round(F * 1.5) + lineas.length * lh, y0 = h - barra;
+  const g = x.createLinearGradient(0, y0 - F * 1.6, 0, h);
+  g.addColorStop(0, "rgba(4,51,28,0)"); g.addColorStop(.25, "rgba(4,51,28,.88)"); g.addColorStop(1, "rgba(4,51,28,.95)");
+  x.fillStyle = g; x.fillRect(0, y0 - F * 1.6, w, barra + F * 1.6);
+  x.fillStyle = "#A6CE39"; x.fillRect(0, y0, Math.round(F * .4), barra);
+  let y = y0 + pad + F; x.textBaseline = "alphabetic";
+  x.font = `800 ${Math.round(F * .92)}px Arial,Helvetica,sans-serif`; x.fillStyle = "#A6CE39";
+  x.fillText("PILOTO EXHIBE Y GANA  ·  " + etiqueta, pad + F * .6, y); y += Math.round(F * 1.5);
+  lineas.forEach((L, i) => {
+    x.font = (i === 0 ? `800 ${F}px` : `500 ${Math.round(F * .92)}px`) + " Arial,Helvetica,sans-serif";
+    x.fillStyle = i === 0 ? "#FFFFFF" : "rgba(255,255,255,.88)";
+    x.fillText(L, pad + F * .6, y); y += lh;
+  });
+  const tw = 260, tc = document.createElement("canvas");
+  tc.width = tw; tc.height = Math.round(h * (tw / w));
+  tc.getContext("2d").drawImage(c, 0, 0, tc.width, tc.height);
+  return { full: c.toDataURL("image/jpeg", .82), thumb: tc.toDataURL("image/jpeg", .5) };
+}
+
+/* ---------- exportación ---------- */
+function descargarCSV(filas, nombre) {
+  const csv = "\uFEFF" + filas.map(f => f.map(v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`).join(";")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = nombre; a.click();
+}
+function filasCSV(regs) {
+  const h = ["Corte", "Rango", "Tipo", "Estado", "Motivo", "Detalle", "Fecha", "Hora", "Mercaderista", "PDV", "Cliente", "Mercado",
+    "Canal", "Latitud", "Longitud", "N_Boleta", "SKU", "Marca", "Cantidad_UND", "Importe_S/", "Lote", "Vencimiento", "Fotos"];
+  const f = [h];
+  regs.forEach(r => {
+    const c = CORTES.find(x => x.n === Number(r.corte)) || { et: "" };
+    const base = [r.corte, c.et, r.tipo, r.estado, r.motivo || "", r.detalle || "", r.fecha, r.hora, r.usuario,
+      r.pdv, r.cliente, r.mercado, r.canal, r.lat || "", r.lng || "", r.numBoleta || ""];
+    if (!r.items || !r.items.length) f.push([...base, "", "", "", "", "", "", r.nFotos || 0]);
+    else r.items.forEach(i => f.push([...base, i.n, i.m, i.cant, i.monto != null ? Number(i.monto).toFixed(2) : "",
+      i.lote || "", i.vence || "", r.nFotos || 0]));
+  });
+  return f;
+}
+
+/* ============================================================
+   PILOTO EXHIBE Y GANA · Dashboard analítico
+   ============================================================ */
+const D = { regs: [], filtro: { corte: "todos", mercado: "todos", merc: "todos", marca: "todos" } };
+
+
+
+let dashListo = false;
+async function abrirDash() {
+  if (!dashListo) { armarFiltros(); dashListo = true; }
+  await recargar();
+}
+
+function armarFiltros() {
+  $("fCorte").innerHTML = `<option value="todos">Todos los cortes</option>` +
+    CORTES.map(c => `<option value="${c.n}">Corte ${c.n} · ${c.et} (${c.tipo === "AMBOS" ? "Stock+Bol" : "Stock"})</option>`).join("");
+  $("fMercado").innerHTML = `<option value="todos">Todos los mercados</option>` +
+    [...new Set(CLIENTES.map(c => c.mercado))].map(m => `<option>${esc(m)}</option>`).join("");
+  $("fMerc").innerHTML = `<option value="todos">Todo el equipo</option>` +
+    USUARIOS.filter(u => u.rol === "merc").map(u => `<option>${esc(u.nom)}</option>`).join("");
+  $("fMarca").innerHTML = `<option value="todos">Todas las marcas</option>` +
+    [...new Set(SKUS.map(s => s.m))].sort().map(m => `<option>${esc(m)}</option>`).join("");
+  ["fCorte", "fMercado", "fMerc", "fMarca"].forEach(id => $(id).addEventListener("change", pintar));
+}
+async function recargar() {
+  $("estado").textContent = "Cargando…";
+  D.regs = await DB.listar();
+  $("estado").textContent = D.regs.length + " registros";
+  pintar();
+}
+
+/* ---------- filtrado ---------- */
+function aplicarFiltros() {
+  const f = { corte: $("fCorte").value, mercado: $("fMercado").value, merc: $("fMerc").value, marca: $("fMarca").value };
+  D.filtro = f;
+  let r = D.regs.slice();
+  if (f.corte !== "todos") r = r.filter(x => Number(x.corte) === Number(f.corte));
+  if (f.mercado !== "todos") r = r.filter(x => x.mercado === f.mercado);
+  if (f.merc !== "todos") r = r.filter(x => x.usuario === f.merc);
+  if (f.marca !== "todos") r = r.map(x => ({ ...x, items: (x.items || []).filter(i => i.m === f.marca) }));
+  return r;
+}
+function clientesFiltrados() {
+  const f = D.filtro;
+  return carteraDe(f.merc).filter(c => f.mercado === "todos" || c.mercado === f.mercado);
+}
+function cortesFiltrados() {
+  const f = D.filtro;
+  return f.corte === "todos" ? CORTES : CORTES.filter(c => c.n === Number(f.corte));
+}
+
+/* ---------- render principal ---------- */
+function pintar() {
+  const regs = aplicarFiltros(), cls = clientesFiltrados(), cts = cortesFiltrados();
+  const stock = regs.filter(r => r.tipo === "stock"), bol = regs.filter(r => r.tipo === "boleta");
+
+  /* --- cobertura: cada par (corte, PDV) es una oportunidad --- */
+  let opor = 0, relev = 0, noEjec = 0;
+  const porCorte = [];
+  cts.forEach(c => {
+    let ok = 0, no = 0, pend = 0;
+    cls.forEach(cl => {
+      const e = resumenPDV(regs.filter(r => Number(r.corte) === c.n), cl, c);
+      if (e.relevado) ok++; else if (e.bloqueado) no++; else pend++;
+    });
+    opor += cls.length; relev += ok; noEjec += no;
+    const compra = regs.filter(r => Number(r.corte) === c.n && r.tipo === "boleta" && r.estado === "OK")
+      .reduce((a, r) => a + (r.items || []).reduce((x, i) => x + Number(i.monto || 0), 0), 0);
+    porCorte.push({ c, ok, no, pend, total: cls.length, compra });
+  });
+
+  const und = stock.filter(r => r.estado === "OK").reduce((a, r) => a + (r.items || []).reduce((x, i) => x + Number(i.cant || 0), 0), 0);
+  const compra = bol.filter(r => r.estado === "OK").reduce((a, r) => a + (r.items || []).reduce((x, i) => x + Number(i.monto || 0), 0), 0);
+  const undBol = bol.filter(r => r.estado === "OK").reduce((a, r) => a + (r.items || []).reduce((x, i) => x + Number(i.cant || 0), 0), 0);
+  const boletasOK = bol.filter(r => r.estado === "OK").length;
+  const skusDist = new Set(); regs.forEach(r => (r.items || []).forEach(i => skusDist.add(i.n)));
+  const cob = opor ? Math.round(relev / opor * 100) : 0;
+
+  $("kpis").innerHTML = `
+    <div class="k"><div class="e">Cobertura efectiva</div><div class="v">${cob}%</div><div class="s">${relev} de ${opor} oportunidades</div></div>
+    <div class="k alerta"><div class="e">No ejecutados</div><div class="v">${noEjec}</div><div class="s">${opor ? Math.round(noEjec / opor * 100) : 0}% con motivo registrado</div></div>
+    <div class="k ambar"><div class="e">Sin visitar</div><div class="v">${opor - relev - noEjec}</div><div class="s">sin ningún registro</div></div>
+    <div class="k"><div class="e">Unidades en stock</div><div class="v">${miles(und)}</div><div class="s">${skusDist.size} SKU distintos relevados</div></div>
+    <div class="k"><div class="e">Compra relevada</div><div class="v" style="font-size:21px">${soles(compra)}</div><div class="s">${miles(undBol)} UND en ${boletasOK} boleta(s)</div></div>
+    <div class="k"><div class="e">Ticket promedio</div><div class="v" style="font-size:21px">${soles(boletasOK ? compra / boletasOK : 0)}</div><div class="s">precio medio ${soles(undBol ? compra / undBol : 0)} / UND</div></div>`;
+
+  pintarEvolucion(porCorte);
+  pintarCompra(porCorte);
+  pintarRanking("topStock", stock, "cant", "UND");
+  pintarRanking("topBoleta", bol, "monto", "S/");
+  pintarMix(regs);
+  pintarMercados(regs, cts);
+  pintarEquipo(regs, cts);
+  pintarMotivos(regs);
+  pintarVencimientos(stock);
+  pintarDetalle(regs);
+}
+
+/* ---------- gráfico: cobertura por corte ---------- */
+function pintarEvolucion(pc) {
+  if (!pc.length) return;
+  const W = 100, alto = 150, gap = 3;
+  const bw = (W - gap * (pc.length - 1)) / pc.length;
+  let barras = "", etiquetas = "";
+  pc.forEach((p, i) => {
+    const x = i * (bw + gap), t = p.total || 1;
+    const hOk = p.ok / t * alto, hNo = p.no / t * alto, hPe = p.pend / t * alto;
+    barras += `<rect x="${x}" y="${alto - hOk}" width="${bw}" height="${hOk}" fill="var(--verde)" rx="0.6"/>
+      <rect x="${x}" y="${alto - hOk - hNo}" width="${bw}" height="${hNo}" fill="var(--vino)"/>
+      <rect x="${x}" y="0" width="${bw}" height="${hPe}" fill="var(--linea)"/>`;
+    etiquetas += `<div style="flex:1;text-align:center"><b>${Math.round(p.ok / t * 100)}%</b><br><span>C${p.c.n}</span></div>`;
+  });
+  $("gEvolucion").innerHTML =
+    `<svg class="g" viewBox="0 0 ${W} ${alto}" preserveAspectRatio="none" style="height:150px">${barras}</svg>
+     <div style="display:flex;font-size:10.5px;color:var(--gris);margin-top:6px;font-variant-numeric:tabular-nums">${etiquetas}</div>
+     <div class="leyenda"><span><i style="background:var(--verde)"></i>Relevado</span>
+       <span><i style="background:var(--vino)"></i>No ejecutado</span>
+       <span><i style="background:var(--linea)"></i>Sin visitar</span></div>`;
+}
+
+/* ---------- gráfico: compra por corte ---------- */
+function pintarCompra(pc) {
+  const conBol = pc.filter(p => p.c.tipo === "AMBOS");
+  if (!conBol.length) { $("gCompra").innerHTML = `<div class="vacio">Los cortes seleccionados no incluyen boletas.</div>`; return; }
+  const max = Math.max(...conBol.map(p => p.compra), 1);
+  const W = 100, H = 120;
+  const px = conBol.length > 1 ? conBol.map((p, i) => [i * (W / (conBol.length - 1)), H - (p.compra / max) * H]) : [[W / 2, H - (conBol[0].compra / max) * H]];
+  const linea = px.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+  const area = linea + ` L${px[px.length - 1][0]},${H} L${px[0][0]},${H} Z`;
+  $("gCompra").innerHTML =
+    `<svg class="g" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="height:120px">
+      <path d="${area}" fill="rgba(0,132,61,.12)"/>
+      <path d="${linea}" fill="none" stroke="var(--verde)" stroke-width="1.4" vector-effect="non-scaling-stroke"/>
+      ${px.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="1.6" fill="var(--verde)" vector-effect="non-scaling-stroke"/>`).join("")}
+    </svg>
+    <div style="display:flex;font-size:10.5px;color:var(--gris);margin-top:6px;font-variant-numeric:tabular-nums">
+      ${conBol.map(p => `<div style="flex:1;text-align:center"><b>${p.compra ? "S/ " + Math.round(p.compra).toLocaleString("es-PE") : "—"}</b><br>C${p.c.n}</div>`).join("")}</div>`;
+}
+
+/* ---------- rankings ---------- */
+function pintarRanking(cont, regs, campo, unidad) {
+  const acum = {};
+  regs.filter(r => r.estado === "OK").forEach(r => (r.items || []).forEach(i => {
+    const v = Number(i[campo] || 0); if (!v) return;
+    acum[i.n] = (acum[i.n] || 0) + v;
+  }));
+  const top = Object.entries(acum).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  if (!top.length) { $(cont).innerHTML = `<div class="vacio">Sin datos para el filtro actual.</div>`; return; }
+  const max = top[0][1];
+  $(cont).innerHTML = `<div class="barras">` + top.map(([n, v]) => `
+    <div class="b"><div class="et" title="${esc(n)}">${esc(n)}</div>
+      <div class="vl">${unidad === "S/" ? soles(v) : miles(v) + " UND"}</div>
+      <div class="tr"><i style="width:${v / max * 100}%"></i></div></div>`).join("") + `</div>`;
+}
+
+/* ---------- mix por marca ---------- */
+function pintarMix(regs) {
+  const acum = {};
+  regs.filter(r => r.estado === "OK").forEach(r => (r.items || []).forEach(i => {
+    acum[i.m] = (acum[i.m] || 0) + Number(i.cant || 0);
+  }));
+  const tot = Object.values(acum).reduce((a, b) => a + b, 0);
+  const top = Object.entries(acum).sort((a, b) => b[1] - a[1]);
+  if (!top.length) { $("mixMarca").innerHTML = `<div class="vacio">Sin datos para el filtro actual.</div>`; return; }
+  $("mixMarca").innerHTML = `<div class="barras">` + top.map(([m, v]) => `
+    <div class="b"><div class="et">${esc(m)}</div><div class="vl">${miles(v)} UND · ${Math.round(v / tot * 100)}%</div>
+      <div class="tr"><i style="width:${v / top[0][1] * 100}%"></i></div></div>`).join("") + `</div>`;
+}
+
+/* ---------- cobertura por mercado ---------- */
+function pintarMercados(regs, cts) {
+  const mercados = [...new Set(clientesFiltrados().map(c => c.mercado))];
+  const filas = mercados.map(m => {
+    const cls = clientesFiltrados().filter(c => c.mercado === m);
+    let ok = 0, no = 0, tot = 0;
+    cts.forEach(c => cls.forEach(cl => {
+      tot++;
+      const e = resumenPDV(regs.filter(r => Number(r.corte) === c.n), cl, c);
+      if (e.relevado) ok++; else if (e.bloqueado) no++;
+    }));
+    return { m, ok, no, tot, pct: tot ? Math.round(ok / tot * 100) : 0 };
+  }).sort((a, b) => b.pct - a.pct);
+  $("mercados").innerHTML = `<div class="barras">` + filas.map(f => `
+    <div class="b ${f.pct < 60 ? "rojo" : ""}"><div class="et">${esc(f.m)} <span style="color:var(--gris)">(${CLIENTES.filter(c => c.mercado === f.m).length} PDV)</span></div>
+      <div class="vl">${f.pct}%</div><div class="tr"><i style="width:${f.pct}%"></i></div></div>`).join("") + `</div>`;
+}
+
+/* ---------- equipo ---------- */
+function pintarEquipo(regs, cts) {
+  const cls = clientesFiltrados();
+  const filas = USUARIOS.filter(u => u.rol === "merc").map(u => {
+    const rs = regs.filter(r => r.usuario === u.nom);
+    const cartera = carteraDe(u.nom).filter(c => D.filtro.mercado === "todos" || c.mercado === D.filtro.mercado);
+    let ok = 0, no = 0;
+    cts.forEach(c => cartera.forEach(cl => {
+      const e = resumenPDV(rs.filter(r => Number(r.corte) === c.n), cl, c);
+      if (e.relevado) ok++; else if (e.bloqueado) no++;
+    }));
+    const und = rs.filter(r => r.tipo === "stock" && r.estado === "OK").reduce((a, r) => a + (r.items || []).reduce((x, i) => x + Number(i.cant || 0), 0), 0);
+    const sol = rs.filter(r => r.tipo === "boleta" && r.estado === "OK").reduce((a, r) => a + (r.items || []).reduce((x, i) => x + Number(i.monto || 0), 0), 0);
+    const lin = rs.reduce((a, r) => a + (r.items || []).length, 0);
+    return { nom: u.nom, ok, no, und, sol, lin, opor: cartera.length * cts.length };
+  }).sort((a, b) => b.ok - a.ok);
+  $("equipo").innerHTML = `<div class="tabla-wrap"><table class="eq">
+    <tr><th>Mercaderista</th><th class="n">Cobertura</th><th class="n">No ejec.</th><th class="n">Líneas</th><th class="n">UND stock</th><th class="n">Compra S/</th></tr>` +
+    filas.map(f => `<tr><td>${esc(f.nom)}<br><span style="color:var(--gris);font-size:11px">${carteraDe(f.nom).length} PDV asignados</span></td>
+      <td class="n">${f.ok}/${f.opor}<br><span style="color:var(--gris);font-size:11px">${f.opor ? Math.round(f.ok / f.opor * 100) : 0}%</span></td>
+      <td class="n" style="${f.no ? "color:var(--vino)" : ""}">${f.no}</td>
+      <td class="n">${f.lin}</td><td class="n">${miles(f.und)}</td><td class="n">${f.sol ? soles(f.sol) : "—"}</td></tr>`).join("") + `</table></div>`;
+}
+
+/* ---------- motivos de no ejecución ---------- */
+function pintarMotivos(regs) {
+  const no = regs.filter(r => r.estado === "NO");
+  if (!no.length) { $("motivos").innerHTML = `<div class="vacio">Sin casos de no ejecución en el filtro actual. 👏</div>`; return; }
+  const acum = {};
+  no.forEach(r => { const k = (r.tipo === "stock" ? "Stock · " : "Boleta · ") + r.motivo; acum[k] = (acum[k] || 0) + 1; });
+  const top = Object.entries(acum).sort((a, b) => b[1] - a[1]);
+  $("motivos").innerHTML = `<div class="barras">` + top.map(([m, v]) => `
+    <div class="b rojo"><div class="et">${esc(m)}</div><div class="vl">${v} caso${v > 1 ? "s" : ""}</div>
+      <div class="tr"><i style="width:${v / top[0][1] * 100}%"></i></div></div>`).join("") + `</div>
+    <div class="tabla-wrap" style="margin-top:12px"><table class="eq">
+      <tr><th>Corte</th><th>PDV</th><th>Tipo</th><th>Motivo y detalle</th><th>Mercaderista</th></tr>` +
+    no.slice().reverse().slice(0, 25).map(r => `<tr>
+      <td class="n" style="font-weight:700">C${r.corte}</td>
+      <td>${esc(r.cliente)}<br><span style="color:var(--gris);font-size:11px">${esc(r.mercado)} · ${r.fecha}</span></td>
+      <td><span class="pill-est no">${r.tipo === "stock" ? "Stock" : "Boleta"}</span></td>
+      <td><b>${esc(r.motivo)}</b><br><span style="color:var(--gris)">${esc(r.detalle)}</span></td>
+      <td>${esc(r.usuario)}</td></tr>`).join("") + `</table></div>`;
+}
+
+/* ---------- vencimientos ---------- */
+function pintarVencimientos(stock) {
+  const lote = [];
+  stock.filter(r => r.estado === "OK").forEach(r => (r.items || []).forEach(i => {
+    const m = mesesHasta(i.vence);
+    if (m !== null && m < 6) lote.push({ ...i, r, m });
+  }));
+  lote.sort((a, b) => a.m - b.m);
+  if (!lote.length) { $("vencimientos").innerHTML = `<div class="vacio">Ningún lote relevado vence en menos de 6 meses.</div>`; return; }
+  $("vencimientos").innerHTML = `<div class="tabla-wrap"><table class="eq">
+    <tr><th>Vence</th><th class="n">Meses</th><th>SKU</th><th class="n">UND</th><th>Lote</th><th>PDV</th></tr>` +
+    lote.slice(0, 30).map(x => `<tr>
+      <td class="n" style="font-weight:700;color:${x.m < 3 ? "var(--vino)" : "var(--ambar)"}">${fechaCorta(x.vence)}</td>
+      <td class="n">${x.m}</td><td>${esc(x.n)}</td><td class="n">${miles(x.cant)}</td><td>${esc(x.lote)}</td>
+      <td>${esc(x.r.cliente)}<br><span style="color:var(--gris);font-size:11px">${esc(x.r.mercado)}</span></td></tr>`).join("") + `</table></div>`;
+}
+
+/* ---------- detalle ---------- */
+function pintarDetalle(regs) {
+  const r = regs.slice().reverse().slice(0, 40);
+  if (!r.length) { $("detalle").innerHTML = `<div class="vacio">Sin registros para el filtro actual.</div>`; return; }
+  $("detalle").innerHTML = `<div class="tabla-wrap"><table class="eq">
+    <tr><th>Fecha</th><th>Corte</th><th>PDV</th><th>Tipo</th><th>Estado</th><th class="n">SKU</th><th class="n">UND</th><th class="n">S/</th><th>Mercaderista</th></tr>` +
+    r.map(x => {
+      const u = (x.items || []).reduce((a, i) => a + Number(i.cant || 0), 0);
+      const s = (x.items || []).reduce((a, i) => a + Number(i.monto || 0), 0);
+      return `<tr><td style="white-space:nowrap">${x.fecha}<br><span style="color:var(--gris);font-size:11px">${x.hora}</span></td>
+        <td class="n">C${x.corte}</td>
+        <td>${esc(x.cliente)}<br><span style="color:var(--gris);font-size:11px">${esc(x.mercado)} · resp. ${esc(responsableDe(x.pdv))}</span></td>
+        <td>${x.tipo === "stock" ? "Stock" : "Boleta"}</td>
+        <td><span class="pill-est ${x.estado === "NO" ? "no" : ""}">${x.estado === "NO" ? "No ejec." : "OK"}</span></td>
+        <td class="n">${(x.items || []).length}</td><td class="n">${u ? miles(u) : "—"}</td><td class="n">${s ? soles(s) : "—"}</td>
+        <td>${esc(x.usuario)}</td></tr>`;
+    }).join("") + `</table></div>`;
+}
+
+function exportarTodo() {
+  const regs = aplicarFiltros();
+  if (!regs.length) { toast("No hay registros para exportar."); return; }
+  descargarCSV(filasCSV(regs), "exhibe_y_gana_dashboard.csv");
+  toast("CSV exportado ✔");
+}
+
+
+/* ============================================================
+   PILOTO EXHIBE Y GANA · Lógica de la app de campo
+   ============================================================ */
+const E = {
+  user: null, corte: null, corteSup: null, cliente: null,
+  regsCorte: [], destinoFoto: null, modoBusqueda: null, filtroMarca: "Todas", pdvAbierto: null,
+  stock: { permite: null, fotos: [], thumbs: [], sku: null, fotoProd: null, thumbProd: null, items: [] },
+  boleta: { permite: null, fotos: [], thumbs: [], sku: null, items: [] }
+};
+const MARCAS = ["Todas", ...[...new Set(SKUS.map(s => s.m))].sort()];
+/* PDV visibles según el perfil: la mercaderista solo ve su cartera */
+function miCartera() { return E.user.rol === "sup" ? CLIENTES.slice() : carteraDe(E.user.nom); }
+
+/* ===================== arranque ===================== */
+window.addEventListener("DOMContentLoaded", () => {
+  const s = Sesion.leer();
+  if (s) iniciarSesion(s); else $("pLogin").style.display = "flex";
+  $("inpPwd").addEventListener("keydown", e => { if (e.key === "Enter") entrar(); });
+  $("hojaInput").addEventListener("input", pintarBusqueda);
+  $("fileInput").addEventListener("change", recibirFoto);
+});
+
+function entrar() {
+  const r = validarAcceso($("inpUsr").value, $("inpPwd").value);
+  const err = $("loginErr");
+  if (!r.ok) { err.textContent = r.msg; err.classList.add("on"); return; }
+  err.classList.remove("on"); Sesion.guardar(r.user); iniciarSesion(r.user);
+}
+function iniciarSesion(user) {
+  E.user = user;
+  $("pLogin").style.display = "none"; $("appWrap").style.display = "block";
+  $("usrNom").textContent = user.nom;
+  E.corte = corteActivo(); E.corteSup = E.corte;
+  pintarBarraCorte();
+  GPS.pedir(pintarGPS); pintarGPS();
+  if (!DB.remoto) $("avisoModo").style.display = "block";
+  revisarPendientes();
+  if (user.rol === "sup") { $("tabsSup").style.display = "flex"; ir("pSup"); cargarSupervisor(); }
+  else {
+    $("cliSub").textContent = miCartera().length + " PDV asignados a ti";
+    $("tituloCartera").textContent = "Mi cartera · " + miCartera().length + " PDV";
+    ir("pInicio"); cargarMiAvance();
+  }
+}
+function salir() { Sesion.cerrar(); location.reload(); }
+
+/* ---------- recuperación de relevos que quedaron en el equipo ---------- */
+function revisarPendientes() {
+  const p = DB.pendientes();
+  if (!p.length) { $("avisoPend").style.display = "none"; return; }
+  $("nPend").textContent = p.length;
+  $("avisoPend").style.display = "block";
+}
+async function reenviarPendientes() {
+  const b = $("btnPend");
+  b.disabled = true;
+  const r = await DB.reenviar((k, t) => { b.textContent = `Enviando ${k} de ${t}…`; });
+  b.disabled = false; b.textContent = "⬆ Enviar ahora";
+  revisarPendientes();
+  if (r.fallados) toast(`Se enviaron ${r.enviados}. Quedan ${r.fallados}, reintenta con mejor señal.`);
+  else { toast(`<b>${r.enviados}</b> relevo(s) enviados al servidor ✔`); await cargarMiAvance(); }
+}
+function pintarGPS() { $("gpsTxt").textContent = GPS.etiqueta(); $("gpsChip").className = "gps " + (GPS.estado === "ok" ? "ok" : GPS.estado === "error" ? "err" : ""); }
+function pintarBarraCorte() {
+  const c = E.corte, dentro = hoyISO() >= c.ini && hoyISO() <= c.fin;
+  $("barraCorte").innerHTML = `<div class="in">📅 <b>Corte ${c.n}</b> · ${c.et}
+    <span class="pill">${ETIQ_TIPO[c.tipo]}</span></div>`;
+  if (!dentro) qs("#barraCorte .in").insertAdjacentHTML("beforeend", `<span style="font-size:10.5px;opacity:.85">fuera de fecha</span>`);
+}
+
+/* ===================== navegación ===================== */
+function ir(id) {
+  document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("on"));
+  $(id).classList.add("on"); window.scrollTo(0, 0); pintarAcciones(id); pintarCtx(id);
+  $("appWrap").style.maxWidth = id === "pDash" ? "1080px" : "520px";
+  if (E.user && E.user.rol === "sup") {
+    $("tabAvance").classList.toggle("on", id === "pSup");
+    $("tabDash").classList.toggle("on", id === "pDash");
+  }
+}
+function pintarCtx(id) {
+  const b = $("barraCtx");
+  if (id === "pInicio" || id === "pSup" || !E.cliente) { b.classList.remove("on"); return; }
+  b.classList.add("on"); b.innerHTML = `📍 <b>${esc(E.cliente.mercado)}</b> · ${esc(E.cliente.nombre)}`;
+}
+function pintarAcciones(id) {
+  const a = $("accionesIn");
+  if (id === "pStock") a.innerHTML = `<button class="btn pri" id="btnGuardarStock" onclick="guardar('stock')">Guardar relevo de stock</button><button class="btn txt" onclick="volverInicio()">Volver</button>`;
+  else if (id === "pBoleta") a.innerHTML = `<button class="btn pri" id="btnGuardarBol" onclick="guardar('boleta')">Guardar relevo de boleta</button><button class="btn txt" onclick="volverInicio()">Volver</button>`;
+  else if (id === "pSup") a.innerHTML = `<button class="btn sec" onclick="exportarCorte()">⬇ Exportar CSV del corte</button><button class="btn txt" onclick="cargarSupervisor()">Actualizar avance</button>`;
+  else if (id === "pDash") a.innerHTML = `<button class="btn sec" onclick="exportarTodo()">⬇ Exportar CSV filtrado</button><button class="btn txt" onclick="recargar()">Actualizar datos</button>`;
+  else a.innerHTML = "";
+  if (id === "pStock" || id === "pBoleta") pintarBotonGuardar(id === "pStock" ? "stock" : "boleta");
+}
+function volverInicio() { ir("pInicio"); cargarMiAvance(); }
+function irSup() { ir("pSup"); cargarSupervisor(); }
+function irDash() { ir("pDash"); abrirDash(); }
+
+/* ===================== buscadores ===================== */
+function abrirClientes() {
+  E.modoBusqueda = "cliente"; $("hojaTitulo").textContent = "Buscar cliente / PDV";
+  $("hojaInput").placeholder = "Nombre, mercado o código…"; $("hojaChips").style.display = "none"; abrirHoja();
+}
+function abrirSKU(modo) {
+  E.modoBusqueda = modo; E.filtroMarca = "Todas";
+  $("hojaTitulo").textContent = "Buscar SKU"; $("hojaInput").placeholder = "Ej: listerine 500, talco 200gr, jabón…";
+  $("hojaChips").style.display = "flex";
+  $("hojaChips").innerHTML = MARCAS.map((m, i) => `<button class="chip ${i === 0 ? "on" : ""}" onclick="filtrarMarca(${i},this)">${esc(m)}</button>`).join("");
+  abrirHoja();
+}
+function filtrarMarca(i, el) {
+  E.filtroMarca = MARCAS[i];
+  document.querySelectorAll("#hojaChips .chip").forEach(c => c.classList.remove("on"));
+  el.classList.add("on"); pintarBusqueda();
+}
+function abrirHoja() { $("fondoHoja").classList.add("on"); $("hoja").classList.add("on"); $("hojaInput").value = ""; pintarBusqueda(); setTimeout(() => $("hojaInput").focus(), 120); }
+function cerrarHoja() { $("fondoHoja").classList.remove("on"); $("hoja").classList.remove("on"); $("hojaInput").blur(); }
+function resaltar(txt, q) {
+  if (!q) return esc(txt);
+  const i = norm(txt).indexOf(norm(q)); if (i < 0) return esc(txt);
+  return esc(txt.slice(0, i)) + "<mark>" + esc(txt.slice(i, i + q.length)) + "</mark>" + esc(txt.slice(i + q.length));
+}
+function pintarBusqueda() {
+  const q = $("hojaInput").value.trim(), L = $("hojaLista");
+  if (E.modoBusqueda === "cliente") {
+    const r = miCartera().filter(c => !q || norm(c.nombre + " " + c.mercado + " " + c.id + " " + c.involves).includes(norm(q)));
+    L.innerHTML = r.length ? r.map(c => {
+      const e = resumenPDV(E.regsCorte, c, E.corte);
+      return `<div class="op ${e.gestionado ? "hecho" : ""}" onclick="elegirCliente('${c.id}')">
+        <span class="mk">${esc(c.mercado)}</span>
+        <span class="tx">${resaltar(c.nombre, q)}<br><span style="color:var(--gris);font-size:11.5px">PDV ${esc(c.id)} · ${esc(c.direccion)}</span></span></div>`;
+    }).join("") : `<div class="nada">Sin coincidencias.</div>`;
+    return;
+  }
+  const T = norm(q).split(" ").filter(Boolean);
+  const r = SKUS.filter(s => (E.filtroMarca === "Todas" || s.m === E.filtroMarca) && T.every(t => norm(s.n).includes(t)));
+  const top = r.slice(0, 120);
+  L.innerHTML = top.length
+    ? top.map(s => `<div class="op" onclick="elegirSKU('${s.id}')"><span class="mk">${esc(s.m)}</span><span class="tx">${resaltar(s.n, q)}</span></div>`).join("")
+    + (r.length > top.length ? `<div class="nada">+${r.length - top.length} resultados más. Afina la búsqueda.</div>` : "")
+    : `<div class="nada">Sin coincidencias para “${esc(q)}”.</div>`;
+}
+function elegirCliente(id) {
+  const c = CLIENTES.find(x => x.id === id); E.cliente = c; cerrarHoja();
+  $("btnCliente").classList.remove("vacio");
+  $("cliNom").textContent = c.nombre; $("cliSub").textContent = `${c.mercado} · PDV ${c.id}`;
+  $("fichaCliente").innerHTML = `<div class="ficha">
+      <div class="cod">PDV ${esc(c.id)} · ${esc(c.canal)}</div>
+      <div class="nom">${esc(c.nombre)}</div>
+      <div class="dir">${esc(c.direccion)}</div>
+      <div class="tags"><span class="tag lima">${esc(c.mercado)}</span><span class="tag">${esc(c.red)}</span>
+        <span class="tag">Mec. 1: ${esc(c.m1)}</span><span class="tag">Mec. 2: ${esc(c.m2)}</span></div></div>`;
+  $("modulos").style.display = "block"; actualizarModulos(); window.scrollTo(0, 0);
+}
+function elegirSKU(id) {
+  const s = SKUS.find(x => x.id === id);
+  const b = E.modoBusqueda === "stock" ? $("btnSkuStock") : $("btnSkuBol");
+  if (E.modoBusqueda === "stock") { E.stock.sku = s; $("skuStockNom").textContent = s.n; }
+  else { E.boleta.sku = s; $("skuBolNom").textContent = s.n; }
+  b.classList.remove("vacio"); b.querySelector("small").textContent = s.m + " · " + s.id; cerrarHoja();
+}
+function actualizarModulos() {
+  const soloStock = E.corte.tipo === "STOCK", e = resumenPDV(E.regsCorte, E.cliente, E.corte);
+  const mS = $("modStock"), mB = $("modBoleta");
+  mS.className = "modulo" + (e.stock === "OK" ? " listo" : e.stock === "NO" ? " bloq" : "");
+  mS.querySelector("small").textContent = e.stock === "OK" ? "Relevado en este corte · puedes volver a registrar"
+    : e.stock === "NO" ? "Registrado como NO permitido" : "Foto de almacén + producto, lote y vencimiento";
+  mB.className = "modulo" + (soloStock ? " off" : e.boleta === "OK" ? " listo" : e.boleta === "NO" ? " bloq" : "");
+  mB.querySelector("small").textContent = soloStock ? "No corresponde a este corte"
+    : e.boleta === "OK" ? "Relevado en este corte · puedes volver a registrar"
+      : e.boleta === "NO" ? "Registrado como sin boletas" : "Foto de boleta + SKU, unidades y soles";
+}
+
+/* ===================== permiso (paso 0) ===================== */
+function setPermiso(mod, valor) {
+  E[mod].permite = valor;
+  const pre = mod === "stock" ? "St" : "Bo";
+  $("perSi" + pre).classList.toggle("on", valor === true);
+  $("perNo" + pre).classList.toggle("on", valor === false);
+  $("bloqueSi" + pre).style.display = valor === true ? "block" : "none";
+  $("bloqueNo" + pre).style.display = valor === false ? "block" : "none";
+  if (valor === false && !$("selMotivo" + pre).options.length) {
+    const lista = mod === "stock" ? MOTIVOS_STOCK : MOTIVOS_BOLETA;
+    $("selMotivo" + pre).innerHTML = `<option value="">Selecciona el motivo…</option>` + lista.map(m => `<option>${esc(m)}</option>`).join("");
+  }
+  pintarBotonGuardar(mod);
+}
+function pintarBotonGuardar(mod) {
+  const b = $(mod === "stock" ? "btnGuardarStock" : "btnGuardarBol"); if (!b) return;
+  const p = E[mod].permite;
+  b.className = "btn " + (p === false ? "alerta" : "pri");
+  b.textContent = p === false
+    ? (mod === "stock" ? "Registrar stock NO permitido" : "Registrar PDV sin boletas")
+    : (mod === "stock" ? "Guardar relevo de stock" : "Guardar relevo de boleta");
+  b.disabled = p === null;
+}
+
+/* ===================== fotos ===================== */
+function capturar(destino) {
+  if (!E.cliente) { toast("Primero selecciona el cliente."); return; }
+  E.destinoFoto = destino; $("fileInput").value = ""; $("fileInput").click();
+}
+async function recibirFoto(e) {
+  const f = e.target.files[0]; if (!f) return;
+  toast("Sellando foto…");
+  try {
+    const et = { almacen: "STOCK · ALMACÉN", producto: "STOCK · PRODUCTO", boleta: "BOLETA", evidencia: "EVIDENCIA DE NO EJECUCIÓN" }[E.destinoFoto];
+    const r = await sellarFoto(f, et, { cliente: E.cliente, usuario: E.user.nom, corte: E.corte.n });
+    if (E.destinoFoto === "almacen") { E.stock.fotos.push(r.full); E.stock.thumbs.push(r.thumb); pintarFotos("fotosAlm", E.stock.fotos, "stock"); }
+    else if (E.destinoFoto === "producto") { E.stock.fotoProd = r.full; E.stock.thumbProd = r.thumb; pintarFotoProd(); }
+    else if (E.destinoFoto === "boleta") { E.boleta.fotos.push(r.full); E.boleta.thumbs.push(r.thumb); pintarFotos("fotosBol", E.boleta.fotos, "boleta"); }
+    else { // evidencia de no ejecución
+      const mod = E.evidenciaDe;
+      E[mod].fotos.push(r.full); E[mod].thumbs.push(r.thumb);
+      pintarEvidencia(mod);
+    }
+    toast("Foto sellada ✔");
+  } catch (err) { toast("No se pudo procesar la foto."); }
+}
+function capturarEvidencia(mod) { E.evidenciaDe = mod; capturar("evidencia"); }
+function pintarEvidencia(mod) {
+  const pre = mod === "stock" ? "St" : "Bo", o = E[mod];
+  $("evid" + pre).innerHTML = o.fotos.map((u, i) =>
+    `<div class="preview"><img src="${u}"><button class="quitar" onclick="quitarFoto('${mod}',${i})">✕</button></div>`).join("");
+}
+function pintarFotos(cont, arr, tipo) {
+  $(cont).innerHTML = arr.map((u, i) => `<div class="preview"><img src="${u}"><button class="quitar" onclick="quitarFoto('${tipo}',${i})">✕</button></div>`).join("");
+  const t = tipo === "stock" ? $("tileAlm") : $("tileBol");
+  if (t) t.style.display = arr.length >= 3 ? "none" : "block";
+}
+function quitarFoto(mod, i) {
+  const o = E[mod]; o.fotos.splice(i, 1); o.thumbs.splice(i, 1);
+  if (o.permite === false) pintarEvidencia(mod);
+  else pintarFotos(mod === "stock" ? "fotosAlm" : "fotosBol", o.fotos, mod);
+}
+function pintarFotoProd() {
+  const w = $("fotoProdWrap");
+  if (!E.stock.fotoProd) { w.innerHTML = ""; $("tileProd").style.display = "block"; return; }
+  w.innerHTML = `<div class="preview"><img src="${E.stock.fotoProd}"><button class="quitar" onclick="E.stock.fotoProd=null;E.stock.thumbProd=null;pintarFotoProd()">✕</button></div>`;
+  $("tileProd").style.display = "none";
+}
+
+/* ===================== items ===================== */
+function marcarMal(el) { el.classList.add("mal"); setTimeout(() => el.classList.remove("mal"), 1800); el.scrollIntoView({ behavior: "smooth", block: "center" }); }
+function resetSel(btn, id) { btn.classList.add("vacio"); $(id).textContent = "Buscar SKU…"; btn.querySelector("small").textContent = "Escribe parte del nombre para filtrar"; }
+
+function agregarStock() {
+  if (!E.stock.sku) { marcarMal($("btnSkuStock")); toast("Selecciona el SKU."); return; }
+  const c = $("inpCantStock"), l = $("inpLote"), v = $("inpVence");
+  if (!c.value || Number(c.value) <= 0) { marcarMal(c); toast("Ingresa la cantidad en unidades."); return; }
+  if (!l.value.trim()) { marcarMal(l); toast("Ingresa el N° de lote."); return; }
+  if (!v.value) { marcarMal(v); toast("Ingresa la fecha de vencimiento."); return; }
+  if (!E.stock.fotoProd) { marcarMal($("tileProd")); toast("Falta la foto del producto."); return; }
+  E.stock.items.push({ n: E.stock.sku.n, m: E.stock.sku.m, cant: Number(c.value), lote: l.value.trim().toUpperCase(), vence: v.value, foto: E.stock.fotoProd, thumb: E.stock.thumbProd });
+  E.stock.sku = null; E.stock.fotoProd = null; E.stock.thumbProd = null;
+  resetSel($("btnSkuStock"), "skuStockNom"); c.value = ""; l.value = ""; v.value = "";
+  pintarFotoProd(); pintarItemsStock(); toast("Producto agregado ✔");
+}
+function pintarItemsStock() {
+  const L = $("listaStock"); $("nStock").textContent = E.stock.items.length;
+  if (!E.stock.items.length) { L.innerHTML = `<div class="vacio">Aún no agregas productos.</div>`; return; }
+  L.innerHTML = E.stock.items.map((it, i) => {
+    const m = mesesHasta(it.vence);
+    return `<div class="item"><img src="${it.foto}"><div class="d"><b>${esc(it.n)}</b>
+    <div class="met num"><span>${it.cant} UND</span><span>Lote ${esc(it.lote)}</span>
+    <span style="${m !== null && m < 6 ? "color:var(--vino);font-weight:700" : ""}">Vence ${fechaCorta(it.vence)}${m !== null && m < 6 ? " ⚠" : ""}</span></div></div>
+    <button class="x" onclick="E.stock.items.splice(${i},1);pintarItemsStock()">✕</button></div>`;
+  }).join("");
+}
+function agregarBoleta() {
+  if (!E.boleta.sku) { marcarMal($("btnSkuBol")); toast("Selecciona el SKU."); return; }
+  const c = $("inpCantBol"), m = $("inpMonto");
+  if (!c.value || Number(c.value) <= 0) { marcarMal(c); toast("Ingresa la cantidad en unidades."); return; }
+  if (m.value === "" || Number(m.value) < 0) { marcarMal(m); toast("Ingresa el importe en soles."); return; }
+  E.boleta.items.push({ n: E.boleta.sku.n, m: E.boleta.sku.m, cant: Number(c.value), monto: Number(m.value) });
+  E.boleta.sku = null; resetSel($("btnSkuBol"), "skuBolNom"); c.value = ""; m.value = "";
+  pintarItemsBol(); toast("Producto agregado ✔");
+}
+function pintarItemsBol() {
+  const L = $("listaBol"), it = E.boleta.items;
+  $("totUnd").textContent = miles(it.reduce((a, b) => a + b.cant, 0));
+  $("totSol").textContent = soles(it.reduce((a, b) => a + b.monto, 0));
+  if (!it.length) { L.innerHTML = `<div class="vacio">Aún no agregas productos de la boleta.</div>`; return; }
+  L.innerHTML = it.map((x, i) => `<div class="item"><div class="d"><b>${esc(x.n)}</b>
+    <div class="met num"><span>${x.cant} UND</span><span>${soles(x.monto)}</span><span>PU ${soles(x.monto / x.cant)}</span></div></div>
+    <button class="x" onclick="E.boleta.items.splice(${i},1);pintarItemsBol()">✕</button></div>`).join("");
+}
+
+/* ===================== guardar ===================== */
+function irStock() { if (!E.cliente) { toast("Selecciona el cliente."); return; } ir("pStock"); }
+function irBoleta() {
+  if (!E.cliente) { toast("Selecciona el cliente."); return; }
+  if (E.corte.tipo === "STOCK") { toast("El corte " + E.corte.n + " es solo de stock."); return; }
+  ir("pBoleta");
+}
+async function guardar(tipo) {
+  const o = E[tipo], pre = tipo === "stock" ? "St" : "Bo", t = ahora(), c = E.cliente;
+  if (o.permite === null) { toast("Indica primero si el cliente permitió el relevo."); return; }
+
+  let reg = {
+    corte: E.corte.n, tipo, fecha: t.fecha, hora: t.hora, iso: t.iso, usuario: E.user.nom,
+    pdv: c.id, cliente: c.nombre, mercado: c.mercado, canal: c.canal, red: c.red,
+    lat: GPS.pos ? GPS.pos.lat.toFixed(6) : "", lng: GPS.pos ? GPS.pos.lng.toFixed(6) : "", acc: GPS.pos ? GPS.pos.acc : "",
+    items: [], thumbs: [], nFotos: 0, motivo: "", detalle: ""
+  };
+  let fotosFull = [];
+
+  if (o.permite === false) {
+    const sel = $("selMotivo" + pre), det = $("txtDetalle" + pre);
+    if (!sel.value) { marcarMal(sel); toast("Selecciona el motivo."); return; }
+    if (det.value.trim().length < 10) { marcarMal(det); toast("Explica el motivo con más detalle (mínimo 10 caracteres)."); return; }
+    reg.estado = "NO"; reg.motivo = sel.value; reg.detalle = det.value.trim();
+    reg.thumbs = [...o.thumbs]; reg.nFotos = o.fotos.length; fotosFull = [...o.fotos];
+  } else if (tipo === "stock") {
+    if (!o.fotos.length) { marcarMal($("tileAlm")); toast("Falta la foto del almacén."); return; }
+    if (!o.items.length) { toast("Agrega al menos un producto."); return; }
+    reg.estado = "OK";
+    reg.items = o.items.map(i => ({ n: i.n, m: i.m, cant: i.cant, lote: i.lote, vence: i.vence }));
+    reg.thumbs = [...o.thumbs, ...o.items.map(i => i.thumb)].slice(0, 6);
+    reg.nFotos = o.fotos.length + o.items.length;
+    fotosFull = [...o.fotos, ...o.items.map(i => i.foto)];
+  } else {
+    if (!o.fotos.length) { marcarMal($("tileBol")); toast("Falta la foto de la boleta."); return; }
+    if (!o.items.length) { toast("Agrega al menos un producto."); return; }
+    reg.estado = "OK"; reg.numBoleta = $("inpNumBol").value.trim(); reg.fechaBol = $("inpFechaBol").value;
+    reg.items = o.items.map(i => ({ n: i.n, m: i.m, cant: i.cant, monto: i.monto }));
+    reg.thumbs = [...o.thumbs]; reg.nFotos = o.fotos.length; fotosFull = [...o.fotos];
+  }
+
+  const nombres = fotosFull.map((_, k) => `${tipo}_C${reg.corte}_${reg.pdv}_${reg.fecha.replace(/\//g, "-")}_${reg.hora.replace(":", "")}_${k + 1}.jpg`);
+  const res = await DB.guardar(reg, fotosFull.map((d, k) => ({ nombre: nombres[k], data: d })));
+  if (!DB.remoto) descargarFotos(fotosFull, nombres);
+
+  limpiar(tipo);
+  await cargarMiAvance(); volverInicio();
+  toast(res.remoto ? "Relevo enviado ✔ <b>guardado en la nube</b>"
+    : "Relevo guardado ✔ <b>fotos descargadas al equipo</b>");
+}
+function descargarFotos(urls, nombres) {
+  urls.forEach((u, k) => {
+    const a = document.createElement("a"); a.href = u; a.download = nombres[k];
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+}
+function limpiar(tipo) {
+  const pre = tipo === "stock" ? "St" : "Bo";
+  E[tipo] = tipo === "stock"
+    ? { permite: null, fotos: [], thumbs: [], sku: null, fotoProd: null, thumbProd: null, items: [] }
+    : { permite: null, fotos: [], thumbs: [], sku: null, items: [] };
+  $("perSi" + pre).classList.remove("on"); $("perNo" + pre).classList.remove("on");
+  $("bloqueSi" + pre).style.display = "none"; $("bloqueNo" + pre).style.display = "none";
+  $("selMotivo" + pre).value = ""; $("txtDetalle" + pre).value = ""; $("evid" + pre).innerHTML = "";
+  if (tipo === "stock") { $("fotosAlm").innerHTML = ""; $("tileAlm").style.display = "block"; pintarFotoProd(); pintarItemsStock(); }
+  else { $("fotosBol").innerHTML = ""; $("tileBol").style.display = "block"; $("inpNumBol").value = ""; $("inpFechaBol").value = ""; pintarItemsBol(); }
+}
+
+/* ===================== avance mercaderista ===================== */
+async function cargarMiAvance() {
+  const todos = await DB.listar(E.corte.n);
+  E.regsCorte = todos.filter(r => r.usuario === E.user.nom);
+  const soloStock = E.corte.tipo === "STOCK";
+  const cartera = miCartera();
+  let ok = 0, bloq = 0;
+  const html = cartera.map(c => {
+    const e = resumenPDV(E.regsCorte, c, E.corte);
+    if (e.relevado) ok++; else if (e.bloqueado) bloq++;
+    const cls = e.relevado ? "ok" : e.bloqueado ? "bloq" : e.parcial ? "parcial" : "";
+    const mk = e.relevado ? "✓" : e.bloqueado ? "✕" : e.parcial ? "!" : "·";
+    return `<div class="pdv ${cls}" onclick="elegirCliente('${c.id}')">
+      <div class="mk">${mk}</div>
+      <div class="d"><b>${esc(c.nombre)}</b><small>${esc(c.mercado)} · PDV ${esc(c.id)}</small></div>
+      <div class="st">${badge("Stock", e.stock)}${soloStock ? "" : badge("Bol", e.boleta)}</div></div>`;
+  }).join("");
+  const pct = cartera.length ? Math.round(ok / cartera.length * 100) : 0;
+  const pb = cartera.length ? Math.round(bloq / cartera.length * 100) : 0;
+  $("miAvance").innerHTML = `<div class="card" style="padding:12px 14px">
+      <div style="display:flex;justify-content:space-between"><b style="font-size:13.5px">${ok} de ${cartera.length} PDV relevados</b>
+      <span class="num" style="font-weight:800;color:var(--verde)">${pct}%</span></div>
+      <div class="barra-av"><i class="ok" style="width:${pct}%"></i><i class="bl" style="width:${pb}%"></i></div>
+      <div style="font-size:11.5px;color:var(--gris)">${bloq} sin ejecución justificada · ${cartera.length - ok - bloq} pendientes</div></div>` + html;
+  if (E.cliente) actualizarModulos();
+}
+function badge(t, est) { return `<span class="${est === "OK" ? "si" : est === "NO" ? "no" : ""}">${t}</span>`; }
+
+/* ===================== supervisor ===================== */
+function verCorte(n) { E.corteSup = CORTES.find(c => c.n === n); E.pdvAbierto = null; cargarSupervisor(); }
+function togglePDV(id) { E.pdvAbierto = E.pdvAbierto === id ? null : id; cargarSupervisor(); }
+
+async function cargarSupervisor() {
+  const c = E.corteSup, soloStock = c.tipo === "STOCK";
+  $("cortesChips").innerHTML = CORTES.map(x => {
+    const hoy = corteDe(hoyISO());
+    return `<button class="corte-chip ${x.n === c.n ? "on" : ""} ${hoy && hoy.n === x.n ? "hoy" : ""}" onclick="verCorte(${x.n})">
+      <div class="n">Corte ${x.n}</div><div class="f">${x.et}</div><div class="t">${x.tipo === "AMBOS" ? "Stock + Bol" : "Solo stock"}</div></button>`;
+  }).join("");
+  $("supCorteTit").textContent = `Corte ${c.n} · ${c.et}`;
+  const regs = await DB.listar(c.n);
+  E.regsSup = regs;
+
+  let ok = 0, bloq = 0, parc = 0, und = 0, sol = 0, lineas = 0;
+  const porMerc = {};
+  CLIENTES.forEach(cl => {
+    const e = resumenPDV(regs, cl, c);
+    if (e.relevado) ok++; else if (e.bloqueado) bloq++; else if (e.parcial) parc++;
+    (porMerc[cl.merc] = porMerc[cl.merc] || []).push({ cl, e });
+  });
+  regs.forEach(r => { lineas += (r.items || []).length; (r.items || []).forEach(i => { und += Number(i.cant) || 0; if (i.monto) sol += Number(i.monto); }); });
+
+  const pct = Math.round(ok / CLIENTES.length * 100), pb = Math.round(bloq / CLIENTES.length * 100);
+  $("supPct").textContent = pct + "%";
+  $("supBarra").innerHTML = `<i class="ok" style="width:${pct}%"></i><i class="bl" style="width:${pb}%"></i>`;
+  $("supSub").textContent = `${ok} relevados · ${bloq} no ejecutados (justificados) · ${parc} parciales · ${CLIENTES.length - ok - bloq - parc} sin visitar`;
+  $("supKpi").innerHTML = `<div><div class="v num">${lineas}</div><div class="e">Líneas SKU</div></div>
+    <div><div class="v num">${miles(und)}</div><div class="e">Unidades</div></div>
+    <div><div class="v num" style="font-size:15px">${soloStock ? "—" : soles(sol)}</div><div class="e">Compra S/</div></div>`;
+
+  $("supEquipo").innerHTML = `<table class="eq"><tr><th>Mercaderista</th><th class="n">Relev.</th><th class="n">No ejec.</th><th class="n">UND</th><th class="n">Último</th></tr>` +
+    USUARIOS.filter(u => u.rol === "merc").map(u => {
+      const rs = regs.filter(r => r.usuario === u.nom), cart = carteraDe(u.nom);
+      let rel = 0, no = 0;
+      cart.forEach(cl => {
+        const e = resumenPDV(rs, cl, c);
+        if (e.relevado) rel++; else if (e.bloqueado) no++;
+      });
+      const ult = rs.length ? rs[rs.length - 1].fecha + " " + rs[rs.length - 1].hora : "—";
+      return `<tr><td>${esc(u.nom)}<br><span style="color:var(--gris);font-size:11px;font-weight:400">${cart.length} PDV</span></td>
+        <td class="n">${rel}/${cart.length}</td><td class="n">${no}</td>
+        <td class="n">${miles(rs.reduce((a, r) => a + (r.items || []).reduce((x, i) => x + (Number(i.cant) || 0), 0), 0))}</td>
+        <td class="n" style="font-weight:500">${ult}</td></tr>`;
+    }).join("") + `</table>`;
+
+  $("supPdv").innerHTML = Object.keys(porMerc).sort().map(m => {
+    const t = porMerc[m], hechos = t.filter(x => x.e.relevado).length;
+    return `<div class="grupo">${esc(m)} · ${hechos}/${t.length}</div>` +
+    t.map(({ cl, e }) => {
+      const cls = e.relevado ? "ok" : e.bloqueado ? "bloq" : e.parcial ? "parcial" : "";
+      const mk = e.relevado ? "✓" : e.bloqueado ? "✕" : e.parcial ? "!" : "·";
+      const quien = [...new Set(e.regs.map(r => r.usuario))].join(", ") || "Sin visita";
+      const ult = e.regs.length ? e.regs[e.regs.length - 1].fecha + " " + e.regs[e.regs.length - 1].hora : "—";
+      return `<div class="pdv ${cls}" onclick="togglePDV('${cl.id}')">
+        <div class="mk">${mk}</div>
+        <div class="d"><b>${esc(cl.nombre)}</b><small>${esc(cl.mercado)} · ${esc(quien)} · ${ult}</small></div>
+        <div class="st">${badge("Stock", e.stock)}${soloStock ? "" : badge("Bol", e.boleta)}</div></div>
+        <div style="display:${E.pdvAbierto === cl.id ? "block" : "none"}">${detallePDV(e.regs)}</div>`;
+    }).join("");
+  }).join("");
+}
+function detallePDV(rs) {
+  if (!rs.length) return `<div class="detalle" style="color:var(--gris)">Sin visitas registradas en este corte.</div>`;
+  return rs.map(r => `<div class="detalle">
+      <div class="l"><b>${r.tipo === "stock" ? "Stock" : "Boleta" + (r.numBoleta ? " " + esc(r.numBoleta) : "")}</b>
+        <span class="pill-est ${r.estado === "NO" ? "no" : ""}" style="margin-left:6px">${r.estado === "NO" ? "No ejecutado" : "Relevado"}</span>
+        <span style="margin-left:auto;color:var(--gris)">${r.fecha} ${r.hora} · ${esc(r.usuario)}</span></div>
+      ${r.estado === "NO" ? `<div class="motivo"><b>${esc(r.motivo)}</b><br>${esc(r.detalle)}</div>`
+      : `<div class="l"><span>${(r.items || []).length} SKU · ${miles((r.items || []).reduce((a, i) => a + Number(i.cant), 0))} UND${r.tipo === "boleta" ? " · " + soles((r.items || []).reduce((a, i) => a + Number(i.monto || 0), 0)) : ""}</span>
+           <span style="margin-left:auto;color:var(--gris)">${r.nFotos} foto(s)</span></div>`}
+      <div class="l" style="color:var(--gris);font-size:11.5px">${r.lat ? "GPS " + r.lat + ", " + r.lng : "Sin GPS"}</div>
+      <div class="thumbs">${(r.thumbs || []).map(t => `<img src="${t}">`).join("")}</div></div>`).join("");
+}
+async function exportarCorte() {
+  const regs = await DB.listar(E.corteSup.n);
+  if (!regs.length) { toast("Este corte aún no tiene registros."); return; }
+  descargarCSV(filasCSV(regs), `exhibe_y_gana_corte${E.corteSup.n}.csv`);
+  toast("CSV exportado ✔");
+}
+
+</script>
+</body>
+</html>
