@@ -6,9 +6,9 @@
    CONFIGURACION - URL del Google Sheets
    ══════════════════════════════════════════════════════════ */
 /* --- 1. CONEXIÓN AL SERVIDOR ---------------------------------
-   URL /exec del Apps Script conectado a tu Google Sheets.     */
+   URL /exec del Apps Script conectado a Google Sheets.        */
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbzi8wMziQOcYFHe3UttD8QV6RoxgntfHd74tioMIAKiKTqEM4LkfNL7xJcXq6hTJdd9vQ/exec",
+  API_URL: "https://script.google.com/macros/s/AKfycbx_KU1Wb7QbGFgTO2JT113TlQUvm3NuMU33DCHOVA4AMrej7RC_9zUyCLBDlnsUxcEiOg/exec",
   NOMBRE:  "Piloto Exhibe y Gana",
   AGENCIA: "Eficacia Perú"
 };
@@ -343,6 +343,11 @@ svg.g{width:100%;height:auto;display:block;overflow:visible}
 
   <!-- ---------- INICIO ---------- -->
   <section class="pantalla" id="pInicio">
+    <div class="aviso rojo" id="avisoPend" style="display:none">
+      <b>Hay <span id="nPend">0</span> relevo(s) guardados en este celular que no llegaron al servidor.</b><br>
+      Envíalos ahora con buena señal. Las fotos ya están en tu galería.
+      <button class="btn alerta chico" style="margin-top:9px" id="btnPend" onclick="reenviarPendientes()">⬆ Enviar ahora</button>
+    </div>
     <div class="aviso" id="avisoModo" style="display:none">
       <b>Modo local.</b> Aún no se ha conectado el servidor: los relevos quedan en este equipo y las fotos se descargan a la galería. Configura <code>API_URL</code> en <code>assets/data.js</code> para centralizar la información.
     </div>
@@ -609,7 +614,7 @@ svg.g{width:100%;height:auto;display:block;overflow:visible}
 </div>
 <div class="exito" id="toast"></div>
 <input type="file" accept="image/*" capture="environment" id="fileInput" style="display:none">
-
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}</script>
 <script>
 /* ============================================================
    PILOTO EXHIBE Y GANA · Datos maestros y configuración
@@ -702,13 +707,15 @@ function corteActivo() {
 }
 
 /* ---------- sesión ---------- */
+/* La sesión vive en localStorage: al usarse como acceso directo de
+   Chrome, cerrar la pestaña no debe expulsar a la mercaderista.   */
 const Sesion = {
-  guardar(u) { try { sessionStorage.setItem("eyg:sesion", JSON.stringify(u)); } catch (e) { window.__sesion = u; } },
+  guardar(u) { try { localStorage.setItem("eyg:sesion", JSON.stringify(u)); } catch (e) { window.__sesion = u; } },
   leer() {
-    try { const s = sessionStorage.getItem("eyg:sesion"); return s ? JSON.parse(s) : (window.__sesion || null); }
+    try { const s = localStorage.getItem("eyg:sesion"); return s ? JSON.parse(s) : (window.__sesion || null); }
     catch (e) { return window.__sesion || null; }
   },
-  cerrar() { try { sessionStorage.removeItem("eyg:sesion"); } catch (e) { } window.__sesion = null; }
+  cerrar() { try { localStorage.removeItem("eyg:sesion"); } catch (e) { } window.__sesion = null; }
 };
 function validarAcceso(usuario, clave) {
   const f = USUARIOS.find(x => norm(x.u) === norm(usuario));
@@ -777,6 +784,27 @@ function responsableDe(idPdv) {
   const c = CLIENTES.find(x => x.id === idPdv);
   return c ? c.merc : "";
 }
+
+/* ---------- relevos guardados en el equipo sin enviar ---------- */
+DB.pendientes = function () { return this.remoto ? this._local() : []; };
+
+DB.reenviar = async function (avisar) {
+  const cola = this._local(); if (!cola.length) return { enviados: 0, fallados: 0 };
+  let enviados = 0; const quedan = [];
+  for (let k = 0; k < cola.length; k++) {
+    avisar && avisar(k + 1, cola.length);
+    try {
+      const r = await fetch(CONFIG.API_URL, {
+        method: "POST",
+        body: JSON.stringify({ accion: "guardar", reg: cola[k], fotos: [] })
+      });
+      const j = await r.json();
+      if (j.ok) enviados++; else quedan.push(cola[k]);
+    } catch (e) { quedan.push(cola[k]); }
+  }
+  this._localSet(quedan);
+  return { enviados, fallados: quedan.length };
+};
 
 /* ---------- estado de cobertura por PDV ---------- */
 /* estado del relevo: "OK" (relevado) | "NO" (no permitido / sin boletas) */
@@ -1188,6 +1216,7 @@ function iniciarSesion(user) {
   pintarBarraCorte();
   GPS.pedir(pintarGPS); pintarGPS();
   if (!DB.remoto) $("avisoModo").style.display = "block";
+  revisarPendientes();
   if (user.rol === "sup") { $("tabsSup").style.display = "flex"; ir("pSup"); cargarSupervisor(); }
   else {
     $("cliSub").textContent = miCartera().length + " PDV asignados a ti";
@@ -1196,6 +1225,23 @@ function iniciarSesion(user) {
   }
 }
 function salir() { Sesion.cerrar(); location.reload(); }
+
+/* ---------- recuperación de relevos que quedaron en el equipo ---------- */
+function revisarPendientes() {
+  const p = DB.pendientes();
+  if (!p.length) { $("avisoPend").style.display = "none"; return; }
+  $("nPend").textContent = p.length;
+  $("avisoPend").style.display = "block";
+}
+async function reenviarPendientes() {
+  const b = $("btnPend");
+  b.disabled = true;
+  const r = await DB.reenviar((k, t) => { b.textContent = `Enviando ${k} de ${t}…`; });
+  b.disabled = false; b.textContent = "⬆ Enviar ahora";
+  revisarPendientes();
+  if (r.fallados) toast(`Se enviaron ${r.enviados}. Quedan ${r.fallados}, reintenta con mejor señal.`);
+  else { toast(`<b>${r.enviados}</b> relevo(s) enviados al servidor ✔`); await cargarMiAvance(); }
+}
 function pintarGPS() { $("gpsTxt").textContent = GPS.etiqueta(); $("gpsChip").className = "gps " + (GPS.estado === "ok" ? "ok" : GPS.estado === "error" ? "err" : ""); }
 function pintarBarraCorte() {
   const c = E.corte, dentro = hoyISO() >= c.ini && hoyISO() <= c.fin;
