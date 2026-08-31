@@ -2,13 +2,11 @@
 <html lang="es">
 <head>
 <script>
-/* ══════════════════════════════════════════════════════════
-   CONFIGURACION - URL del Google Sheets
-   ══════════════════════════════════════════════════════════ */
+/* CONFIGURACION - URL del Google Sheets */
 /* --- 1. CONEXIÓN AL SERVIDOR ---------------------------------
    URL /exec del Apps Script conectado a Google Sheets.        */
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbx_KU1Wb7QbGFgTO2JT113TlQUvm3NuMU33DCHOVA4AMrej7RC_9zUyCLBDlnsUxcEiOg/exec",
+  API_URL: "https://script.google.com/macros/s/AKfycbx6UnssaYvhwAsyFPP17wiIo1kjUgZhp-tS0forr2XNGuU0Y-vNVIMYs5x6mVcvddEYMg/exec",
   NOMBRE:  "Piloto Exhibe y Gana",
   AGENCIA: "Eficacia Perú"
 };
@@ -799,7 +797,7 @@ DB.reenviar = async function (avisar) {
         body: JSON.stringify({ accion: "guardar", reg: cola[k], fotos: [] })
       });
       const j = await r.json();
-      if (j.ok) enviados++; else quedan.push(cola[k]);
+      if (j.ok) { if (!j.duplicado) enviados++; } else quedan.push(cola[k]);
     } catch (e) { quedan.push(cola[k]); }
   }
   this._localSet(quedan);
@@ -1478,6 +1476,7 @@ function irBoleta() {
 async function guardar(tipo) {
   const o = E[tipo], pre = tipo === "stock" ? "St" : "Bo", t = ahora(), c = E.cliente;
   if (o.permite === null) { toast("Indica primero si el cliente permitió el relevo."); return; }
+  if (E.guardando) return;                       /* evita el doble toque */
 
   let reg = {
     corte: E.corte.n, tipo, fecha: t.fecha, hora: t.hora, iso: t.iso, usuario: E.user.nom,
@@ -1509,14 +1508,21 @@ async function guardar(tipo) {
     reg.thumbs = [...o.thumbs]; reg.nFotos = o.fotos.length; fotosFull = [...o.fotos];
   }
 
-  const nombres = fotosFull.map((_, k) => `${tipo}_C${reg.corte}_${reg.pdv}_${reg.fecha.replace(/\//g, "-")}_${reg.hora.replace(":", "")}_${k + 1}.jpg`);
-  const res = await DB.guardar(reg, fotosFull.map((d, k) => ({ nombre: nombres[k], data: d })));
-  if (!DB.remoto) descargarFotos(fotosFull, nombres);
-
-  limpiar(tipo);
-  await cargarMiAvance(); volverInicio();
-  toast(res.remoto ? "Relevo enviado ✔ <b>guardado en la nube</b>"
-    : "Relevo guardado ✔ <b>fotos descargadas al equipo</b>");
+  const btn = $(tipo === "stock" ? "btnGuardarStock" : "btnGuardarBol");
+  E.guardando = true;
+  if (btn) { btn.disabled = true; btn.textContent = "Enviando…"; }
+  try {
+    const nombres = fotosFull.map((_, k) => `${tipo}_C${reg.corte}_${reg.pdv}_${reg.fecha.replace(/\//g, "-")}_${reg.hora.replace(":", "")}_${k + 1}.jpg`);
+    const res = await DB.guardar(reg, fotosFull.map((d, k) => ({ nombre: nombres[k], data: d })));
+    if (!DB.remoto) descargarFotos(fotosFull, nombres);
+    limpiar(tipo);
+    await cargarMiAvance(); volverInicio();
+    toast(res.remoto ? "Relevo enviado ✔ <b>guardado en la nube</b>"
+      : "Relevo guardado ✔ <b>fotos descargadas al equipo</b>");
+  } finally {
+    E.guardando = false;
+    if (btn) { btn.disabled = false; pintarBotonGuardar(tipo); }
+  }
 }
 function descargarFotos(urls, nombres) {
   urls.forEach((u, k) => {
@@ -1586,14 +1592,20 @@ async function cargarSupervisor() {
     if (e.relevado) ok++; else if (e.bloqueado) bloq++; else if (e.parcial) parc++;
     (porMerc[cl.merc] = porMerc[cl.merc] || []).push({ cl, e });
   });
-  regs.forEach(r => { lineas += (r.items || []).length; (r.items || []).forEach(i => { und += Number(i.cant) || 0; if (i.monto) sol += Number(i.monto); }); });
+  regs.forEach(r => {
+    lineas += (r.items || []).length;
+    (r.items || []).forEach(i => {
+      if (r.tipo === "stock") und += Number(i.cant) || 0;
+      else sol += Number(i.monto) || 0;
+    });
+  });
 
   const pct = Math.round(ok / CLIENTES.length * 100), pb = Math.round(bloq / CLIENTES.length * 100);
   $("supPct").textContent = pct + "%";
   $("supBarra").innerHTML = `<i class="ok" style="width:${pct}%"></i><i class="bl" style="width:${pb}%"></i>`;
   $("supSub").textContent = `${ok} relevados · ${bloq} no ejecutados (justificados) · ${parc} parciales · ${CLIENTES.length - ok - bloq - parc} sin visitar`;
   $("supKpi").innerHTML = `<div><div class="v num">${lineas}</div><div class="e">Líneas SKU</div></div>
-    <div><div class="v num">${miles(und)}</div><div class="e">Unidades</div></div>
+    <div><div class="v num">${miles(und)}</div><div class="e">UND en stock</div></div>
     <div><div class="v num" style="font-size:15px">${soloStock ? "—" : soles(sol)}</div><div class="e">Compra S/</div></div>`;
 
   $("supEquipo").innerHTML = `<table class="eq"><tr><th>Mercaderista</th><th class="n">Relev.</th><th class="n">No ejec.</th><th class="n">UND</th><th class="n">Último</th></tr>` +
