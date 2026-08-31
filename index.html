@@ -6,7 +6,7 @@
 /* --- 1. CONEXIÓN AL SERVIDOR ---------------------------------
    URL /exec del Apps Script conectado a Google Sheets.        */
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbx6UnssaYvhwAsyFPP17wiIo1kjUgZhp-tS0forr2XNGuU0Y-vNVIMYs5x6mVcvddEYMg/exec",
+  API_URL: "https://script.google.com/macros/s/AKfycbzxAAGYws0wL5Q-Y49qcqOpvtWhF3E7to7-psyW9Wd1TAYSiLWv5KQbCcKlJF-EyliZog/exec",
   NOMBRE:  "Piloto Exhibe y Gana",
   AGENCIA: "Eficacia Perú"
 };
@@ -336,7 +336,7 @@ svg.g{width:100%;height:auto;display:block;overflow:visible}
   <div class="barra-ctx" id="barraCtx"></div>
   <div class="tabs" id="tabsSup" style="display:none">
     <button class="tab on" id="tabAvance" onclick="irSup()">Avance por corte</button>
-    <button class="tab" id="tabDash" onclick="irDash()">Análisis</button>
+    <button class="tab" id="tabDash" onclick="irDash()">Análisis detallado ↗</button>
   </div>
 
   <!-- ---------- INICIO ---------- -->
@@ -402,14 +402,25 @@ svg.g{width:100%;height:auto;display:block;overflow:visible}
     <!-- SÍ permitió -->
     <div id="bloqueSiSt" style="display:none">
       <div class="card">
-        <h3>2. Foto del almacén</h3>
-        <p class="ayuda">Toma la foto de las cajas en el almacén para evidenciar la compra. Hasta 3 fotos.</p>
+        <h3>2. ¿Qué stock vas a relevar?</h3>
+        <p class="ayuda" id="ayudaUbic">Hay que relevar los dos. Empieza por el que tengas más a la mano.</p>
+        <div class="permiso">
+          <button class="si" id="ubiAlm" onclick="setUbicacion('ALMACEN')">📦 Almacén<small>Cajas guardadas</small></button>
+          <button class="si" id="ubiExh" onclick="setUbicacion('EXHIBICION')">🏪 Exhibición<small>Góndola o mostrador</small></button>
+        </div>
+        <div id="avanceUbic" style="font-size:11.5px;color:var(--gris);margin-top:9px"></div>
+      </div>
+
+      <div id="bloqueCaptura" style="display:none">
+      <div class="card">
+        <h3 id="tituloFoto">3. Foto del almacén</h3>
+        <p class="ayuda" id="ayudaFoto">Toma la foto de las cajas en el almacén para evidenciar la compra. Hasta 3 fotos.</p>
         <div id="fotosAlm"></div>
         <div class="foto-tile" id="tileAlm" onclick="capturar('almacen')">
-          <div class="ico">📷</div><b>Tomar foto del almacén</b><small>Se sella con cliente, mercado, fecha, hora y GPS</small></div>
+          <div class="ico">📷</div><b id="tileAlmTxt">Tomar foto del almacén</b><small>Se sella con cliente, mercado, fecha, hora y GPS</small></div>
       </div>
       <div class="card">
-        <h3>3. Detalle de producto</h3>
+        <h3>4. Detalle de producto</h3>
         <p class="ayuda">Un registro por SKU. Todos los campos son obligatorios.</p>
         <div class="campo"><label>SKU <span class="req">*</span></label>
           <button class="selector vacio" id="btnSkuStock" onclick="abrirSKU('stock')">
@@ -426,6 +437,7 @@ svg.g{width:100%;height:auto;display:block;overflow:visible}
       </div>
       <div class="titulo"><h2 style="font-size:15px">Productos relevados (<span id="nStock">0</span>)</h2></div>
       <div id="listaStock"><div class="vacio">Aún no agregas productos.</div></div>
+      </div>
     </div>
     <div style="height:10px"></div>
   </section>
@@ -806,24 +818,57 @@ DB.reenviar = async function (avisar) {
 
 /* ---------- estado de cobertura por PDV ---------- */
 /* estado del relevo: "OK" (relevado) | "NO" (no permitido / sin boletas) */
+/* El stock se releva en DOS ubicaciones: almacén y exhibición.
+   El PDV no está completo hasta tener ambas.                       */
+const UBICACIONES = [
+  { k: "ALMACEN",    et: "Almacén",    corto: "Alm", icono: "📦",
+    foto: "Foto del almacén", ayudaFoto: "Las cajas guardadas, para evidenciar la compra." },
+  { k: "EXHIBICION", et: "Exhibición", corto: "Exh", icono: "🏪",
+    foto: "Foto de la exhibición", ayudaFoto: "El producto exhibido en góndola, mostrador o gancho." }
+];
+function ubic(k) { return UBICACIONES.find(u => u.k === k) || UBICACIONES[0]; }
+
 function estadoPDV(regs, idPdv) {
   const del = regs.filter(r => r.pdv === idPdv);
-  const s = del.find(r => r.tipo === "stock");
+  const stocks = del.filter(r => r.tipo === "stock");
   const b = del.find(r => r.tipo === "boleta");
-  return {
-    stock: s ? s.estado : null,
-    boleta: b ? b.estado : null,
-    regs: del
-  };
+  const noPermite = stocks.some(r => r.estado === "NO");
+  const alm = stocks.some(r => r.estado === "OK" && r.ubicacion === "ALMACEN");
+  const exh = stocks.some(r => r.estado === "OK" && r.ubicacion === "EXHIBICION");
+  let stock = null;
+  if (noPermite) stock = "NO";
+  else if (alm && exh) stock = "OK";
+  else if (alm || exh) stock = "PARCIAL";
+  return { stock, almacen: alm, exhibicion: exh, boleta: b ? b.estado : null, regs: del };
 }
+/* qué ubicación falta relevar en este PDV */
+function faltaUbicacion(regs, idPdv) {
+  const e = estadoPDV(regs, idPdv);
+  if (e.stock === "NO") return null;
+  if (!e.almacen) return "ALMACEN";
+  if (!e.exhibicion) return "EXHIBICION";
+  return null;
+}
+/* Criterio de avance:
+   VERDE  (relevado)  = respondió todos los módulos del corte y SÍ pudo
+                        levantar el stock. Que el PDV no tenga boletas
+                        es un resultado válido, no un pendiente.
+   VINO   (bloqueado) = gestionó la visita pero no le dejaron ver el
+                        stock físico, que es el dato principal.
+   ÁMBAR  (parcial)   = le falta responder uno de los dos módulos.
+   GRIS               = sin ningún registro.                          */
 function resumenPDV(regs, cliente, corte) {
   const soloStock = corte.tipo === "STOCK";
   const e = estadoPDV(regs, cliente.id);
-  const stockList = e.stock !== null, bolList = soloStock ? true : e.boleta !== null;
+  const stockList = e.stock === "OK" || e.stock === "NO";
+  const bolList = soloStock ? true : e.boleta !== null;
   const gestionado = stockList && bolList;
-  const relevado = e.stock === "OK" && (soloStock || e.boleta === "OK");
-  const bloqueado = gestionado && !relevado;
-  return { ...e, gestionado, relevado, bloqueado, parcial: !gestionado && (stockList || bolList) };
+  const relevado = gestionado && e.stock === "OK";
+  const bloqueado = gestionado && e.stock !== "OK";
+  const sinBoleta = e.boleta === "NO";
+  const algo = e.stock !== null || e.boleta !== null;
+  return { ...e, gestionado, relevado, bloqueado, sinBoleta,
+           parcial: !gestionado && algo };
 }
 
 /* ---------- geolocalización ---------- */
@@ -875,10 +920,12 @@ async function sellarFoto(file, etiqueta, ctx) {
     x.fillStyle = i === 0 ? "#FFFFFF" : "rgba(255,255,255,.88)";
     x.fillText(L, pad + F * .6, y); y += lh;
   });
-  const tw = 260, tc = document.createElement("canvas");
+  /* miniatura chica: viaja a la hoja de cálculo, que limita el
+     tamaño de cada celda. La foto completa va a Drive intacta. */
+  const tw = 170, tc = document.createElement("canvas");
   tc.width = tw; tc.height = Math.round(h * (tw / w));
   tc.getContext("2d").drawImage(c, 0, 0, tc.width, tc.height);
-  return { full: c.toDataURL("image/jpeg", .82), thumb: tc.toDataURL("image/jpeg", .5) };
+  return { full: c.toDataURL("image/jpeg", .82), thumb: tc.toDataURL("image/jpeg", .42) };
 }
 
 /* ---------- exportación ---------- */
@@ -960,13 +1007,13 @@ function pintar() {
   const stock = regs.filter(r => r.tipo === "stock"), bol = regs.filter(r => r.tipo === "boleta");
 
   /* --- cobertura: cada par (corte, PDV) es una oportunidad --- */
-  let opor = 0, relev = 0, noEjec = 0;
+  let opor = 0, relev = 0, noEjec = 0, sinBol = 0;
   const porCorte = [];
   cts.forEach(c => {
     let ok = 0, no = 0, pend = 0;
     cls.forEach(cl => {
       const e = resumenPDV(regs.filter(r => Number(r.corte) === c.n), cl, c);
-      if (e.relevado) ok++; else if (e.bloqueado) no++; else pend++;
+      if (e.relevado) { ok++; if (e.sinBoleta) sinBol++; } else if (e.bloqueado) no++; else pend++;
     });
     opor += cls.length; relev += ok; noEjec += no;
     const compra = regs.filter(r => Number(r.corte) === c.n && r.tipo === "boleta" && r.estado === "OK")
@@ -983,7 +1030,8 @@ function pintar() {
 
   $("kpis").innerHTML = `
     <div class="k"><div class="e">Cobertura efectiva</div><div class="v">${cob}%</div><div class="s">${relev} de ${opor} oportunidades</div></div>
-    <div class="k alerta"><div class="e">No ejecutados</div><div class="v">${noEjec}</div><div class="s">${opor ? Math.round(noEjec / opor * 100) : 0}% con motivo registrado</div></div>
+    <div class="k alerta"><div class="e">Sin acceso al stock</div><div class="v">${noEjec}</div><div class="s">${opor ? Math.round(noEjec / opor * 100) : 0}% con motivo registrado</div></div>
+    <div class="k ambar"><div class="e">PDV sin boletas</div><div class="v">${sinBol}</div><div class="s">visitados, no compraron o no la tienen</div></div>
     <div class="k ambar"><div class="e">Sin visitar</div><div class="v">${opor - relev - noEjec}</div><div class="s">sin ningún registro</div></div>
     <div class="k"><div class="e">Unidades en stock</div><div class="v">${miles(und)}</div><div class="s">${skusDist.size} SKU distintos relevados</div></div>
     <div class="k"><div class="e">Compra relevada</div><div class="v" style="font-size:21px">${soles(compra)}</div><div class="s">${miles(undBol)} UND en ${boletasOK} boleta(s)</div></div>
@@ -1184,7 +1232,7 @@ function exportarTodo() {
 const E = {
   user: null, corte: null, corteSup: null, cliente: null,
   regsCorte: [], destinoFoto: null, modoBusqueda: null, filtroMarca: "Todas", pdvAbierto: null,
-  stock: { permite: null, fotos: [], thumbs: [], sku: null, fotoProd: null, thumbProd: null, items: [] },
+  stock: { permite: null, ubicacion: null, fotos: [], thumbs: [], sku: null, fotoProd: null, thumbProd: null, items: [] },
   boleta: { permite: null, fotos: [], thumbs: [], sku: null, items: [] }
 };
 const MARCAS = ["Todas", ...[...new Set(SKUS.map(s => s.m))].sort()];
@@ -1274,7 +1322,7 @@ function pintarAcciones(id) {
 }
 function volverInicio() { ir("pInicio"); cargarMiAvance(); }
 function irSup() { ir("pSup"); cargarSupervisor(); }
-function irDash() { ir("pDash"); abrirDash(); }
+function irDash() { location.href = "dashboard.html"; }   /* dashboard detallado, archivo aparte */
 
 /* ===================== buscadores ===================== */
 function abrirClientes() {
@@ -1343,8 +1391,10 @@ function actualizarModulos() {
   const soloStock = E.corte.tipo === "STOCK", e = resumenPDV(E.regsCorte, E.cliente, E.corte);
   const mS = $("modStock"), mB = $("modBoleta");
   mS.className = "modulo" + (e.stock === "OK" ? " listo" : e.stock === "NO" ? " bloq" : "");
-  mS.querySelector("small").textContent = e.stock === "OK" ? "Relevado en este corte · puedes volver a registrar"
-    : e.stock === "NO" ? "Registrado como NO permitido" : "Foto de almacén + producto, lote y vencimiento";
+  mS.querySelector("small").textContent = e.stock === "OK" ? "Almacén y exhibición relevados ✔"
+    : e.stock === "NO" ? "Registrado como NO permitido"
+    : e.stock === "PARCIAL" ? (e.almacen ? "Almacén listo · falta la exhibición" : "Exhibición lista · falta el almacén")
+    : "Almacén y exhibición · foto, lote y vencimiento";
   mB.className = "modulo" + (soloStock ? " off" : e.boleta === "OK" ? " listo" : e.boleta === "NO" ? " bloq" : "");
   mB.querySelector("small").textContent = soloStock ? "No corresponde a este corte"
     : e.boleta === "OK" ? "Relevado en este corte · puedes volver a registrar"
@@ -1359,6 +1409,7 @@ function setPermiso(mod, valor) {
   $("perNo" + pre).classList.toggle("on", valor === false);
   $("bloqueSi" + pre).style.display = valor === true ? "block" : "none";
   $("bloqueNo" + pre).style.display = valor === false ? "block" : "none";
+  if (mod === "stock") { E.stock.ubicacion = null; $("bloqueCaptura").style.display = "none"; pintarUbicaciones(); }
   if (valor === false && !$("selMotivo" + pre).options.length) {
     const lista = mod === "stock" ? MOTIVOS_STOCK : MOTIVOS_BOLETA;
     $("selMotivo" + pre).innerHTML = `<option value="">Selecciona el motivo…</option>` + lista.map(m => `<option>${esc(m)}</option>`).join("");
@@ -1371,8 +1422,35 @@ function pintarBotonGuardar(mod) {
   b.className = "btn " + (p === false ? "alerta" : "pri");
   b.textContent = p === false
     ? (mod === "stock" ? "Registrar stock NO permitido" : "Registrar PDV sin boletas")
-    : (mod === "stock" ? "Guardar relevo de stock" : "Guardar relevo de boleta");
-  b.disabled = p === null;
+    : (mod === "stock"
+        ? (E.stock.ubicacion ? "Guardar stock de " + ubic(E.stock.ubicacion).et.toLowerCase() : "Elige almacén o exhibición")
+        : "Guardar relevo de boleta");
+  b.disabled = p === null || (mod === "stock" && p === true && !E.stock.ubicacion);
+}
+
+/* ---------- origen del stock: almacén / exhibición ---------- */
+function setUbicacion(k) {
+  E.stock.ubicacion = k;
+  const u = ubic(k);
+  $("ubiAlm").classList.toggle("on", k === "ALMACEN");
+  $("ubiExh").classList.toggle("on", k === "EXHIBICION");
+  $("bloqueCaptura").style.display = "block";
+  $("tituloFoto").textContent = "3. " + u.foto;
+  $("ayudaFoto").textContent = u.ayudaFoto + " Hasta 3 fotos.";
+  $("tileAlmTxt").textContent = "Tomar " + u.foto.toLowerCase();
+  pintarBotonGuardar("stock");
+  $("bloqueCaptura").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function pintarUbicaciones() {
+  const e = E.cliente ? estadoPDV(E.regsCorte, E.cliente.id) : { almacen: false, exhibicion: false };
+  $("ubiAlm").classList.toggle("on", E.stock.ubicacion === "ALMACEN");
+  $("ubiExh").classList.toggle("on", E.stock.ubicacion === "EXHIBICION");
+  const listo = [];
+  if (e.almacen) listo.push("almacén ✔");
+  if (e.exhibicion) listo.push("exhibición ✔");
+  $("avanceUbic").innerHTML = listo.length
+    ? `Ya relevaste: <b>${listo.join(" y ")}</b>${e.almacen && e.exhibicion ? "" : " · falta el otro"}`
+    : "Ninguna de las dos relevada todavía.";
 }
 
 /* ===================== fotos ===================== */
@@ -1384,7 +1462,9 @@ async function recibirFoto(e) {
   const f = e.target.files[0]; if (!f) return;
   toast("Sellando foto…");
   try {
-    const et = { almacen: "STOCK · ALMACÉN", producto: "STOCK · PRODUCTO", boleta: "BOLETA", evidencia: "EVIDENCIA DE NO EJECUCIÓN" }[E.destinoFoto];
+    const uEt = E.stock.ubicacion ? ubic(E.stock.ubicacion).et.toUpperCase() : "STOCK";
+    const et = { almacen: "STOCK · " + uEt, producto: "STOCK · " + uEt + " · PRODUCTO",
+      boleta: "BOLETA", evidencia: "EVIDENCIA DE NO EJECUCIÓN" }[E.destinoFoto];
     const r = await sellarFoto(f, et, { cliente: E.cliente, usuario: E.user.nom, corte: E.corte.n });
     if (E.destinoFoto === "almacen") { E.stock.fotos.push(r.full); E.stock.thumbs.push(r.thumb); pintarFotos("fotosAlm", E.stock.fotos, "stock"); }
     else if (E.destinoFoto === "producto") { E.stock.fotoProd = r.full; E.stock.thumbProd = r.thumb; pintarFotoProd(); }
@@ -1467,7 +1547,7 @@ function pintarItemsBol() {
 }
 
 /* ===================== guardar ===================== */
-function irStock() { if (!E.cliente) { toast("Selecciona el cliente."); return; } ir("pStock"); }
+function irStock() { if (!E.cliente) { toast("Selecciona el cliente."); return; } pintarUbicaciones(); ir("pStock"); }
 function irBoleta() {
   if (!E.cliente) { toast("Selecciona el cliente."); return; }
   if (E.corte.tipo === "STOCK") { toast("El corte " + E.corte.n + " es solo de stock."); return; }
@@ -1491,13 +1571,14 @@ async function guardar(tipo) {
     if (!sel.value) { marcarMal(sel); toast("Selecciona el motivo."); return; }
     if (det.value.trim().length < 10) { marcarMal(det); toast("Explica el motivo con más detalle (mínimo 10 caracteres)."); return; }
     reg.estado = "NO"; reg.motivo = sel.value; reg.detalle = det.value.trim();
-    reg.thumbs = [...o.thumbs]; reg.nFotos = o.fotos.length; fotosFull = [...o.fotos];
+    reg.thumbs = o.thumbs.slice(0, 3); reg.nFotos = o.fotos.length; fotosFull = [...o.fotos];
   } else if (tipo === "stock") {
-    if (!o.fotos.length) { marcarMal($("tileAlm")); toast("Falta la foto del almacén."); return; }
+    if (!o.ubicacion) { toast("Elige si el stock es de almacén o de exhibición."); return; }
+    if (!o.fotos.length) { marcarMal($("tileAlm")); toast("Falta la " + ubic(o.ubicacion).foto.toLowerCase() + "."); return; }
     if (!o.items.length) { toast("Agrega al menos un producto."); return; }
-    reg.estado = "OK";
+    reg.estado = "OK"; reg.ubicacion = o.ubicacion;
     reg.items = o.items.map(i => ({ n: i.n, m: i.m, cant: i.cant, lote: i.lote, vence: i.vence }));
-    reg.thumbs = [...o.thumbs, ...o.items.map(i => i.thumb)].slice(0, 6);
+    reg.thumbs = [...o.thumbs, ...o.items.map(i => i.thumb)].slice(0, 3);
     reg.nFotos = o.fotos.length + o.items.length;
     fotosFull = [...o.fotos, ...o.items.map(i => i.foto)];
   } else {
@@ -1505,7 +1586,7 @@ async function guardar(tipo) {
     if (!o.items.length) { toast("Agrega al menos un producto."); return; }
     reg.estado = "OK"; reg.numBoleta = $("inpNumBol").value.trim(); reg.fechaBol = $("inpFechaBol").value;
     reg.items = o.items.map(i => ({ n: i.n, m: i.m, cant: i.cant, monto: i.monto }));
-    reg.thumbs = [...o.thumbs]; reg.nFotos = o.fotos.length; fotosFull = [...o.fotos];
+    reg.thumbs = o.thumbs.slice(0, 3); reg.nFotos = o.fotos.length; fotosFull = [...o.fotos];
   }
 
   const btn = $(tipo === "stock" ? "btnGuardarStock" : "btnGuardarBol");
@@ -1515,10 +1596,20 @@ async function guardar(tipo) {
     const nombres = fotosFull.map((_, k) => `${tipo}_C${reg.corte}_${reg.pdv}_${reg.fecha.replace(/\//g, "-")}_${reg.hora.replace(":", "")}_${k + 1}.jpg`);
     const res = await DB.guardar(reg, fotosFull.map((d, k) => ({ nombre: nombres[k], data: d })));
     if (!DB.remoto) descargarFotos(fotosFull, nombres);
+    const eraUbic = reg.ubicacion;
     limpiar(tipo);
-    await cargarMiAvance(); volverInicio();
-    toast(res.remoto ? "Relevo enviado ✔ <b>guardado en la nube</b>"
-      : "Relevo guardado ✔ <b>fotos descargadas al equipo</b>");
+    await cargarMiAvance();
+    const falta = tipo === "stock" && eraUbic ? faltaUbicacion(E.regsCorte, c.id) : null;
+    if (falta) {
+      E.stock.permite = true;
+      $("perSiSt").classList.add("on"); $("bloqueSiSt").style.display = "block";
+      pintarUbicaciones(); setUbicacion(falta);
+      toast(`${ubic(eraUbic).et} guardado ✔ Ahora releva la <b>${ubic(falta).et.toLowerCase()}</b>`);
+    } else {
+      volverInicio();
+      toast(res.remoto ? "Relevo enviado ✔ <b>guardado en la nube</b>"
+        : "Relevo guardado ✔ <b>fotos descargadas al equipo</b>");
+    }
   } finally {
     E.guardando = false;
     if (btn) { btn.disabled = false; pintarBotonGuardar(tipo); }
@@ -1533,7 +1624,7 @@ function descargarFotos(urls, nombres) {
 function limpiar(tipo) {
   const pre = tipo === "stock" ? "St" : "Bo";
   E[tipo] = tipo === "stock"
-    ? { permite: null, fotos: [], thumbs: [], sku: null, fotoProd: null, thumbProd: null, items: [] }
+    ? { permite: null, ubicacion: null, fotos: [], thumbs: [], sku: null, fotoProd: null, thumbProd: null, items: [] }
     : { permite: null, fotos: [], thumbs: [], sku: null, items: [] };
   $("perSi" + pre).classList.remove("on"); $("perNo" + pre).classList.remove("on");
   $("bloqueSi" + pre).style.display = "none"; $("bloqueNo" + pre).style.display = "none";
@@ -1548,16 +1639,16 @@ async function cargarMiAvance() {
   E.regsCorte = todos.filter(r => r.usuario === E.user.nom);
   const soloStock = E.corte.tipo === "STOCK";
   const cartera = miCartera();
-  let ok = 0, bloq = 0;
+  let ok = 0, bloq = 0, sinBol = 0;
   const html = cartera.map(c => {
     const e = resumenPDV(E.regsCorte, c, E.corte);
-    if (e.relevado) ok++; else if (e.bloqueado) bloq++;
+    if (e.relevado) { ok++; if (e.sinBoleta) sinBol++; } else if (e.bloqueado) bloq++;
     const cls = e.relevado ? "ok" : e.bloqueado ? "bloq" : e.parcial ? "parcial" : "";
     const mk = e.relevado ? "✓" : e.bloqueado ? "✕" : e.parcial ? "!" : "·";
     return `<div class="pdv ${cls}" onclick="elegirCliente('${c.id}')">
       <div class="mk">${mk}</div>
       <div class="d"><b>${esc(c.nombre)}</b><small>${esc(c.mercado)} · PDV ${esc(c.id)}</small></div>
-      <div class="st">${badge("Stock", e.stock)}${soloStock ? "" : badge("Bol", e.boleta)}</div></div>`;
+      <div class="st">${badgeUbic(e)}${soloStock ? "" : badge("Bol", e.boleta)}</div></div>`;
   }).join("");
   const pct = cartera.length ? Math.round(ok / cartera.length * 100) : 0;
   const pb = cartera.length ? Math.round(bloq / cartera.length * 100) : 0;
@@ -1565,10 +1656,14 @@ async function cargarMiAvance() {
       <div style="display:flex;justify-content:space-between"><b style="font-size:13.5px">${ok} de ${cartera.length} PDV relevados</b>
       <span class="num" style="font-weight:800;color:var(--verde)">${pct}%</span></div>
       <div class="barra-av"><i class="ok" style="width:${pct}%"></i><i class="bl" style="width:${pb}%"></i></div>
-      <div style="font-size:11.5px;color:var(--gris)">${bloq} sin ejecución justificada · ${cartera.length - ok - bloq} pendientes</div></div>` + html;
+      <div style="font-size:11.5px;color:var(--gris)">${sinBol ? sinBol + " sin boletas · " : ""}${bloq} sin acceso al stock · ${cartera.length - ok - bloq} pendientes</div></div>` + html;
   if (E.cliente) actualizarModulos();
 }
 function badge(t, est) { return `<span class="${est === "OK" ? "si" : est === "NO" ? "no" : ""}">${t}</span>`; }
+function badgeUbic(e) {
+  if (e.stock === "NO") return `<span class="no">Stock</span>`;
+  return `<span class="${e.almacen ? "si" : ""}">Alm</span><span class="${e.exhibicion ? "si" : ""}">Exh</span>`;
+}
 
 /* ===================== supervisor ===================== */
 function verCorte(n) { E.corteSup = CORTES.find(c => c.n === n); E.pdvAbierto = null; cargarSupervisor(); }
@@ -1585,11 +1680,11 @@ async function cargarSupervisor() {
   const regs = await DB.listar(c.n);
   E.regsSup = regs;
 
-  let ok = 0, bloq = 0, parc = 0, und = 0, sol = 0, lineas = 0;
+  let ok = 0, bloq = 0, parc = 0, sinBol = 0, und = 0, sol = 0, lineas = 0;
   const porMerc = {};
   CLIENTES.forEach(cl => {
     const e = resumenPDV(regs, cl, c);
-    if (e.relevado) ok++; else if (e.bloqueado) bloq++; else if (e.parcial) parc++;
+    if (e.relevado) { ok++; if (e.sinBoleta) sinBol++; } else if (e.bloqueado) bloq++; else if (e.parcial) parc++;
     (porMerc[cl.merc] = porMerc[cl.merc] || []).push({ cl, e });
   });
   regs.forEach(r => {
@@ -1603,7 +1698,7 @@ async function cargarSupervisor() {
   const pct = Math.round(ok / CLIENTES.length * 100), pb = Math.round(bloq / CLIENTES.length * 100);
   $("supPct").textContent = pct + "%";
   $("supBarra").innerHTML = `<i class="ok" style="width:${pct}%"></i><i class="bl" style="width:${pb}%"></i>`;
-  $("supSub").textContent = `${ok} relevados · ${bloq} no ejecutados (justificados) · ${parc} parciales · ${CLIENTES.length - ok - bloq - parc} sin visitar`;
+  $("supSub").textContent = `${ok} relevados${sinBol ? " (de ellos " + sinBol + " sin boletas)" : ""} · ${bloq} sin acceso al stock · ${parc} parciales · ${CLIENTES.length - ok - bloq - parc} sin visitar`;
   $("supKpi").innerHTML = `<div><div class="v num">${lineas}</div><div class="e">Líneas SKU</div></div>
     <div><div class="v num">${miles(und)}</div><div class="e">UND en stock</div></div>
     <div><div class="v num" style="font-size:15px">${soloStock ? "—" : soles(sol)}</div><div class="e">Compra S/</div></div>`;
@@ -1634,7 +1729,7 @@ async function cargarSupervisor() {
       return `<div class="pdv ${cls}" onclick="togglePDV('${cl.id}')">
         <div class="mk">${mk}</div>
         <div class="d"><b>${esc(cl.nombre)}</b><small>${esc(cl.mercado)} · ${esc(quien)} · ${ult}</small></div>
-        <div class="st">${badge("Stock", e.stock)}${soloStock ? "" : badge("Bol", e.boleta)}</div></div>
+        <div class="st">${badgeUbic(e)}${soloStock ? "" : badge("Bol", e.boleta)}</div></div>
         <div style="display:${E.pdvAbierto === cl.id ? "block" : "none"}">${detallePDV(e.regs)}</div>`;
     }).join("");
   }).join("");
@@ -1642,7 +1737,7 @@ async function cargarSupervisor() {
 function detallePDV(rs) {
   if (!rs.length) return `<div class="detalle" style="color:var(--gris)">Sin visitas registradas en este corte.</div>`;
   return rs.map(r => `<div class="detalle">
-      <div class="l"><b>${r.tipo === "stock" ? "Stock" : "Boleta" + (r.numBoleta ? " " + esc(r.numBoleta) : "")}</b>
+      <div class="l"><b>${r.tipo === "stock" ? "Stock" + (r.ubicacion ? " · " + ubic(r.ubicacion).et : "") : "Boleta" + (r.numBoleta ? " " + esc(r.numBoleta) : "")}</b>
         <span class="pill-est ${r.estado === "NO" ? "no" : ""}" style="margin-left:6px">${r.estado === "NO" ? "No ejecutado" : "Relevado"}</span>
         <span style="margin-left:auto;color:var(--gris)">${r.fecha} ${r.hora} · ${esc(r.usuario)}</span></div>
       ${r.estado === "NO" ? `<div class="motivo"><b>${esc(r.motivo)}</b><br>${esc(r.detalle)}</div>`

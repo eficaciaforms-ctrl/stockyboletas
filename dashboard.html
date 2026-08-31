@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#00552A">
+<title>Dashboard · Exhibe y Gana</title>
+<script>
+/* CONFIGURACION - URL del Google Sheets */
+/* --- 1. CONEXIÓN AL SERVIDOR ---------------------------------
+   URL /exec del Apps Script conectado a Google Sheets.        */
+const CONFIG = {
+  API_URL: "https://script.google.com/macros/s/AKfycbzxAAGYws0wL5Q-Y49qcqOpvtWhF3E7to7-psyW9Wd1TAYSiLWv5KQbCcKlJF-EyliZog/exec",
+  NOMBRE:  "Piloto Exhibe y Gana",
+  AGENCIA: "Eficacia Perú"
+};
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2304331C'/%3E%3Crect x='14' y='34' width='9' height='16' fill='%23A6CE39'/%3E%3Crect x='27' y='24' width='9' height='26' fill='%23A6CE39'/%3E%3Crect x='40' y='14' width='9' height='36' fill='%2300843D'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   PILOTO EXHIBE Y GANA · Estilos
+   PALETA EFICACIA — cambiar los hex aquí y se aplica a todo
+   ============================================================ */
+:root{
+  --verde:#00843D; --verde-osc:#00552A; --verde-prof:#04331C;
+  --lima:#A6CE39; --carbon:#16211C; --gris:#5F7169;
+  --linea:#DCE5DF; --fondo:#F2F6F2; --blanco:#FFFFFF;
+  --alerta:#D9531E; --ambar:#E9A400; --vino:#A62828;
+  --r:14px; --sombra:0 1px 2px rgba(4,51,28,.06),0 8px 24px rgba(4,51,28,.06);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--fondo);color:var(--carbon);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+button,input,select,textarea{font-family:inherit;font-size:16px;color:inherit}
+a{color:var(--verde)}
+
+.app{max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:100px}
+.ancho{max-width:1080px}
+
+/* ---------- login ---------- */
+.login{min-height:100vh;background:linear-gradient(165deg,var(--verde-prof),#00552A 58%,#00702F);
+  display:flex;flex-direction:column;justify-content:center;padding:28px 22px;color:#fff}
+.login .in{max-width:420px;margin:0 auto;width:100%}
+.login .mk{font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:800;color:var(--lima);display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.login .mk i{width:10px;height:10px;background:var(--lima);border-radius:2px;display:block}
+.login h1{margin:0 0 4px;font-size:31px;font-weight:800;letter-spacing:-.03em;line-height:1.08}
+.login .sub{color:rgba(255,255,255,.66);font-size:13.5px;margin-bottom:26px}
+.login .campo label{color:rgba(255,255,255,.72)}
+.login .entrada{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2);color:#fff}
+.login .entrada::placeholder{color:rgba(255,255,255,.38)}
+.login .entrada:focus{border-color:var(--lima);background:rgba(255,255,255,.11)}
+.login .err{background:rgba(217,83,30,.2);border:1px solid rgba(217,83,30,.55);color:#ffd9c9;border-radius:9px;padding:10px 12px;font-size:13px;margin-bottom:12px;display:none}
+.login .err.on{display:block}
+.login .pie{margin-top:22px;font-size:11.5px;color:rgba(255,255,255,.42);line-height:1.6}
+
+/* ---------- header ---------- */
+.top{background:var(--verde-osc);color:#fff;padding:12px 16px;position:sticky;top:0;z-index:40;box-shadow:0 2px 12px rgba(4,51,28,.18)}
+.top-in{max-width:520px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.top-in.ancho{max-width:1080px}
+.marca{font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--lima);display:flex;align-items:center;gap:7px}
+.marca i{width:8px;height:8px;background:var(--lima);border-radius:2px;display:block;flex:none}
+.top h1{margin:2px 0 0;font-size:18px;font-weight:800;letter-spacing:-.02em}
+.top .der{margin-left:auto;text-align:right}
+.gps{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);padding:4px 8px;border-radius:999px;white-space:nowrap}
+.punto{width:7px;height:7px;border-radius:50%;background:var(--ambar);flex:none}
+.gps.ok .punto{background:var(--lima)} .gps.err .punto{background:var(--alerta)}
+.top .usr{font-size:11px;color:rgba(255,255,255,.7);margin-top:5px;display:block}
+.top .usr b{color:#fff;font-weight:700}
+.top .usr button,.top .usr a{background:none;border:none;color:var(--lima);font-size:11px;font-weight:800;cursor:pointer;padding:0 0 0 8px;text-decoration:none}
+
+.barra-corte{background:var(--verde);color:#fff;padding:9px 16px;font-size:12px;position:sticky;top:0;z-index:39;display:flex;align-items:center;gap:8px}
+.barra-corte .in{max-width:520px;margin:0 auto;width:100%;display:flex;align-items:center;gap:8px}
+.barra-corte b{font-weight:800}
+.barra-corte .pill{margin-left:auto;background:rgba(255,255,255,.18);border-radius:999px;padding:3px 9px;font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.barra-ctx{background:var(--verde-prof);color:#fff;padding:7px 16px;font-size:11.5px;display:none;align-items:center;gap:8px;position:sticky;top:38px;z-index:38}
+.barra-ctx.on{display:flex}
+
+.pantalla{display:none;padding:14px 14px 0}
+.pantalla.on{display:block;animation:sube .22s ease}
+@keyframes sube{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.titulo{display:flex;align-items:baseline;gap:10px;margin:2px 0 12px}
+.titulo h2{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em}
+.paso{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--verde);background:rgba(0,132,61,.09);padding:3px 8px;border-radius:5px}
+
+.card{background:var(--blanco);border:1px solid var(--linea);border-radius:var(--r);padding:14px;margin-bottom:12px;box-shadow:var(--sombra)}
+.card h3{margin:0 0 3px;font-size:14px;font-weight:800}
+.card p.ayuda{margin:0 0 12px;font-size:12.5px;color:var(--gris)}
+.campo{margin-bottom:12px}.campo:last-child{margin-bottom:0}
+.campo label{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gris);margin-bottom:5px}
+.campo label .req{color:var(--alerta)}
+.entrada{width:100%;padding:12px;border:1.5px solid var(--linea);border-radius:10px;background:#fff;outline:none;transition:border-color .15s}
+.entrada:focus{border-color:var(--verde)}
+.entrada.mal{border-color:var(--alerta);background:#fff6f3}
+textarea.entrada{min-height:84px;resize:vertical;line-height:1.4}
+.fila2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.btn{width:100%;padding:14px;border:none;border-radius:11px;font-weight:800;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .08s}
+.btn:active{transform:scale(.985)}
+.btn.pri{background:var(--verde);color:#fff}
+.btn.sec{background:#fff;color:var(--verde-osc);border:1.5px solid var(--linea)}
+.btn.lima{background:var(--lima);color:var(--verde-prof)}
+.btn.alerta{background:var(--vino);color:#fff}
+.btn.txt{background:transparent;color:var(--gris);font-weight:700;padding:10px}
+.btn.chico{padding:10px;font-size:13px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.acciones{position:fixed;bottom:0;left:0;right:0;z-index:37;pointer-events:none}
+.acciones-in{max-width:520px;margin:0 auto;padding:12px 14px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--fondo) 62%,rgba(242,246,242,0));pointer-events:auto}
+
+.selector{width:100%;padding:14px;border:1.5px solid var(--linea);border-radius:11px;background:#fff;text-align:left;cursor:pointer;display:flex;align-items:center;gap:10px}
+.selector .v{flex:1;min-width:0}
+.selector .v b{display:block;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.selector .v small{color:var(--gris);font-size:12px}
+.selector .fl{color:var(--verde);font-size:12px;font-weight:800}
+.selector.vacio .v b{color:var(--gris);font-weight:600}
+.selector.mal{border-color:var(--alerta);background:#fff6f3}
+
+.ficha{background:linear-gradient(135deg,var(--verde-osc),#007134);color:#fff;border-radius:var(--r);padding:14px;margin-bottom:12px}
+.ficha .cod{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--lima);font-weight:800;margin-bottom:4px}
+.ficha .nom{font-size:16px;font-weight:800;line-height:1.25}
+.ficha .dir{font-size:12.5px;color:rgba(255,255,255,.82);margin-top:6px}
+.ficha .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tag{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);padding:4px 8px;border-radius:6px}
+.tag.lima{background:var(--lima);color:var(--verde-prof);border-color:transparent}
+
+.modulo{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:#fff;border:1.5px solid var(--linea);border-radius:var(--r);padding:15px;margin-bottom:10px;cursor:pointer}
+.modulo .ic{width:44px;height:44px;border-radius:11px;display:grid;place-items:center;flex:none;font-size:20px}
+.modulo .ic.a{background:rgba(0,132,61,.1)} .modulo .ic.b{background:rgba(166,206,57,.22)}
+.modulo b{display:block;font-size:15.5px}.modulo small{color:var(--gris);font-size:12.5px}
+.modulo .fl{margin-left:auto;color:var(--verde);font-weight:800}
+.modulo.off{opacity:.45;pointer-events:none}
+.modulo.listo{border-color:var(--verde);background:#f4fbf6}
+.modulo.bloq{border-color:var(--vino);background:#fdf5f5}
+
+/* ---------- permiso (sí/no) ---------- */
+.permiso{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.permiso button{padding:16px 12px;border-radius:12px;border:2px solid var(--linea);background:#fff;cursor:pointer;text-align:center;font-weight:800;font-size:15px;line-height:1.2}
+.permiso button small{display:block;font-weight:600;font-size:11px;color:var(--gris);margin-top:3px}
+.permiso button.si.on{border-color:var(--verde);background:#f0faf3;color:var(--verde-osc)}
+.permiso button.no.on{border-color:var(--vino);background:#fdf3f3;color:var(--vino)}
+.permiso button.on small{color:inherit;opacity:.75}
+
+.foto-tile{border:1.5px dashed var(--linea);border-radius:12px;padding:20px 14px;text-align:center;background:#fbfdfb;cursor:pointer}
+.foto-tile .ico{font-size:26px;line-height:1}
+.foto-tile b{display:block;font-size:14px;margin-top:6px}
+.foto-tile small{color:var(--gris);font-size:12px}
+.foto-tile.mal{border-color:var(--alerta);background:#fff6f3}
+.preview{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--linea);margin-bottom:8px}
+.preview img{width:100%;display:block}
+.preview .quitar{position:absolute;top:8px;right:8px;background:rgba(4,51,28,.78);color:#fff;border:none;width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer;font-weight:700}
+
+.item{display:flex;gap:10px;background:#fff;border:1px solid var(--linea);border-left:3px solid var(--verde);border-radius:10px;padding:10px;margin-bottom:8px;align-items:flex-start}
+.item img{width:52px;height:52px;object-fit:cover;border-radius:7px;flex:none;background:var(--fondo)}
+.item .d{flex:1;min-width:0}
+.item .d b{display:block;font-size:13.5px;line-height:1.3}
+.item .d .met{font-size:11.5px;color:var(--gris);margin-top:3px}
+.item .d .met span{margin-right:9px;white-space:nowrap}
+.item .x{background:none;border:none;color:var(--gris);font-size:18px;cursor:pointer;padding:0 2px;line-height:1}
+.vacio{text-align:center;padding:22px 12px;color:var(--gris);font-size:13px;border:1px dashed var(--linea);border-radius:12px;background:#fbfdfb}
+.total{display:flex;justify-content:space-between;align-items:center;background:var(--verde-prof);color:#fff;border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.total .et{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--lima);font-weight:800}
+.total .vl{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.total .der{text-align:right}
+
+/* ---------- hoja buscador ---------- */
+.sombra-fondo{position:fixed;inset:0;background:rgba(4,51,28,.5);z-index:60;display:none}
+.sombra-fondo.on{display:block}
+.hoja{position:fixed;left:0;right:0;bottom:0;z-index:61;background:#fff;border-radius:18px 18px 0 0;max-width:520px;margin:0 auto;max-height:88vh;display:none;flex-direction:column}
+.hoja.on{display:flex}
+.hoja-top{padding:14px 14px 10px;border-bottom:1px solid var(--linea)}
+.hoja-top .h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.hoja-top .h b{font-size:16px;font-weight:800}
+.hoja-top .h button{background:none;border:none;font-size:14px;color:var(--gris);cursor:pointer;font-weight:700}
+.buscador{position:relative}
+.buscador input{width:100%;padding:12px 12px 12px 38px;border:1.5px solid var(--linea);border-radius:10px;outline:none}
+.buscador input:focus{border-color:var(--verde)}
+.buscador .lupa{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.45;font-size:15px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{white-space:nowrap;font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;border:1px solid var(--linea);background:#fff;cursor:pointer;color:var(--gris)}
+.chip.on{background:var(--verde);border-color:var(--verde);color:#fff}
+.lista{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 0 calc(12px + env(safe-area-inset-bottom))}
+.lista .op{padding:12px 14px;border-bottom:1px solid #f0f4f1;cursor:pointer;display:flex;gap:10px;align-items:center}
+.lista .op .mk{font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--verde);background:rgba(0,132,61,.09);padding:3px 6px;border-radius:4px;flex:none;min-width:74px;text-align:center}
+.lista .op .tx{font-size:14px;line-height:1.3}
+.lista .op mark{background:rgba(166,206,57,.55);border-radius:2px;padding:0 1px}
+.lista .op.hecho{background:#f4fbf6}
+.lista .op.hecho .tx::after{content:" ✔";color:var(--verde);font-weight:800}
+.lista .nada{padding:26px 14px;text-align:center;color:var(--gris);font-size:13px}
+
+/* ---------- avance / supervisor ---------- */
+.cortes{display:flex;gap:7px;overflow-x:auto;padding:2px 14px 12px;scrollbar-width:none;margin:0 -14px}
+.cortes::-webkit-scrollbar{display:none}
+.corte-chip{flex:none;border:1.5px solid var(--linea);background:#fff;border-radius:11px;padding:8px 11px;cursor:pointer;text-align:left;min-width:104px}
+.corte-chip .n{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gris)}
+.corte-chip .f{font-size:13.5px;font-weight:800;letter-spacing:-.01em}
+.corte-chip .t{font-size:10px;color:var(--gris);font-weight:700}
+.corte-chip.on{background:var(--verde-osc);border-color:var(--verde-osc);color:#fff}
+.corte-chip.on .n,.corte-chip.on .t{color:var(--lima)}
+.corte-chip.hoy{border-color:var(--lima);border-width:2px}
+
+.barra-av{height:9px;border-radius:99px;background:var(--linea);overflow:hidden;margin:8px 0 4px;display:flex}
+.barra-av i{display:block;height:100%;transition:width .4s}
+.barra-av i.ok{background:linear-gradient(90deg,var(--verde),var(--lima))}
+.barra-av i.bl{background:var(--vino)}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.kpi div{background:#fff;border:1px solid var(--linea);border-radius:11px;padding:10px;text-align:center}
+.kpi .v{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.kpi .e{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gris);margin-top:1px}
+
+.grupo{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gris);margin:14px 0 7px;display:flex;align-items:center;gap:8px}
+.grupo::after{content:"";flex:1;height:1px;background:var(--linea)}
+.pdv{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--linea);border-left:4px solid var(--linea);border-radius:11px;padding:11px;margin-bottom:7px;cursor:pointer}
+.pdv.ok{border-left-color:var(--verde);background:#f2faf5}
+.pdv.parcial{border-left-color:var(--ambar);background:#fffdf4}
+.pdv.bloq{border-left-color:var(--vino);background:#fdf5f5}
+.pdv .mk{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:13px;font-weight:800;background:var(--linea);color:var(--gris)}
+.pdv.ok .mk{background:var(--verde);color:#fff}
+.pdv.parcial .mk{background:var(--ambar);color:#fff}
+.pdv.bloq .mk{background:var(--vino);color:#fff}
+.pdv .d{flex:1;min-width:0}
+.pdv .d b{display:block;font-size:13.5px;line-height:1.25}
+.pdv .d small{color:var(--gris);font-size:11.5px}
+.pdv .st{display:flex;gap:4px;flex:none}
+.st span{font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 6px;border-radius:5px;background:var(--linea);color:var(--gris)}
+.st span.si{background:var(--verde);color:#fff}
+.st span.no{background:var(--vino);color:#fff}
+.detalle{background:#fff;border:1px solid var(--linea);border-radius:11px;padding:11px;margin:-3px 0 9px;font-size:12.5px}
+.detalle .l{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #f0f4f1}
+.detalle .l:last-child{border:none}
+.detalle .l b{font-weight:800}
+.detalle .motivo{background:#fdf3f3;border-left:3px solid var(--vino);border-radius:6px;padding:8px 10px;margin-top:6px;color:#7a1f1f}
+.detalle .thumbs{display:flex;gap:6px;margin-top:8px;overflow-x:auto}
+.detalle .thumbs img{width:64px;height:64px;object-fit:cover;border-radius:7px;border:1px solid var(--linea);flex:none}
+
+table.eq{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--linea);border-radius:11px;overflow:hidden;font-size:12.5px}
+table.eq th{background:var(--verde-prof);color:#fff;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:8px;text-align:left}
+table.eq td{padding:9px 8px;border-top:1px solid var(--linea)}
+table.eq td.n,table.eq th.n{text-align:right;font-variant-numeric:tabular-nums}
+table.eq td.n{font-weight:700}
+
+.aviso{background:#fffbea;border:1px solid #f2e2a8;border-radius:10px;padding:11px 12px;font-size:12.5px;color:#6b5200;margin-bottom:12px}
+.aviso.rojo{background:#fdf3f3;border-color:#e9c4c4;color:#7a1f1f}
+.exito{position:fixed;left:50%;transform:translateX(-50%);bottom:92px;z-index:80;background:var(--verde-prof);color:#fff;padding:12px 18px;border-radius:11px;font-size:13.5px;font-weight:700;box-shadow:0 8px 30px rgba(4,51,28,.35);display:none;max-width:88%;text-align:center}
+.exito.on{display:block}
+.exito b{color:var(--lima)}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+.dash{max-width:1080px;margin:0 auto;padding:16px 16px 60px}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;background:#fff;border:1px solid var(--linea);border-radius:12px;padding:12px;margin-bottom:14px}
+.filtros .f{flex:1;min-width:150px}
+.filtros label{display:block;font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gris);margin-bottom:4px}
+.filtros select{width:100%;padding:9px 10px;border:1.5px solid var(--linea);border-radius:9px;background:#fff;font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.kpis .k{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:13px 14px;position:relative;overflow:hidden}
+.kpis .k::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--verde)}
+.kpis .k.alerta::before{background:var(--vino)}
+.kpis .k.ambar::before{background:var(--ambar)}
+.kpis .e{font-size:9.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--gris)}
+.kpis .v{font-size:25px;font-weight:800;letter-spacing:-.03em;line-height:1.15;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpis .s{font-size:11.5px;color:var(--gris);margin-top:1px}
+.panel{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:15px;margin-bottom:14px}
+.panel h3{margin:0 0 2px;font-size:14.5px;font-weight:800}
+.panel .sub{font-size:11.5px;color:var(--gris);margin-bottom:12px}
+.rejilla{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:820px){.rejilla{grid-template-columns:1fr}}
+
+.barras .b{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:9px;font-size:12.5px}
+.barras .b .et{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.barras .b .vl{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.barras .b .tr{grid-column:1/-1;height:7px;border-radius:99px;background:var(--fondo);overflow:hidden;margin-top:-4px}
+.barras .b .tr i{display:block;height:100%;background:linear-gradient(90deg,var(--verde),var(--lima));border-radius:99px}
+.barras .b.rojo .tr i{background:var(--vino)}
+.leyenda{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--gris);margin-top:10px}
+.leyenda span{display:flex;align-items:center;gap:5px}
+.leyenda i{width:10px;height:10px;border-radius:3px;display:block}
+svg.g{width:100%;height:auto;display:block;overflow:visible}
+.tabla-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pill-est{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:5px;background:rgba(0,132,61,.12);color:var(--verde-osc);white-space:nowrap}
+.pill-est.no{background:rgba(166,40,40,.12);color:var(--vino)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- pestañas del supervisor ---------- */
+.tabs{display:flex;gap:0;background:#fff;border-bottom:1px solid var(--linea);position:sticky;top:38px;z-index:37;
+  max-width:1080px;margin:0 auto;width:100%}
+.tabs .tab{flex:1;padding:12px 8px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:800;
+  color:var(--gris);border-bottom:3px solid transparent;transition:color .15s}
+.tabs .tab.on{color:var(--verde-osc);border-bottom-color:var(--verde)}
+#pDash{padding:14px 14px 0}
+#pDash .filtros select{font-size:15px}
+
+/* ---------- dashboard detallado ---------- */
+.tabs{display:flex;gap:0;background:#fff;border-bottom:1px solid var(--linea);overflow-x:auto;scrollbar-width:none;
+  max-width:1080px;margin:0 auto;position:sticky;top:0;z-index:30}
+.tabs::-webkit-scrollbar{display:none}
+.tabs .tab{flex:1;min-width:96px;padding:13px 10px;border:none;background:none;cursor:pointer;font-size:13.5px;
+  font-weight:800;color:var(--gris);border-bottom:3px solid transparent;white-space:nowrap}
+.tabs .tab.on{color:var(--verde-osc);border-bottom-color:var(--verde)}
+.filtros .acc{display:flex;align-items:flex-end;gap:8px;max-width:230px}
+.panelc{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:15px;margin-bottom:14px}
+.panelc h3{margin:0 0 2px;font-size:15px;font-weight:800}
+.panelc .sub{font-size:11.5px;color:var(--gris);margin-bottom:12px}
+.tenue{color:var(--gris);font-weight:400}
+table.tb{width:100%;border-collapse:collapse;font-size:12.5px}
+table.tb th{background:var(--verde-prof);color:#fff;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+  padding:8px;text-align:left;position:sticky;top:0;white-space:nowrap}
+table.tb td{padding:9px 8px;border-top:1px solid var(--linea);vertical-align:top}
+table.tb td.n,table.tb th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.tb td.wrap{white-space:normal;line-height:1.35;min-width:180px}
+table.tb tr:hover td{background:#f7faf8}
+.tr{height:7px;border-radius:99px;background:var(--fondo);overflow:hidden;min-width:60px}
+.tr i{display:block;height:100%;background:linear-gradient(90deg,var(--verde),var(--lima));border-radius:99px}
+.celda{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:6px;color:#fff;font-size:11px;font-weight:800}
+.mini{border:1px solid var(--linea);background:#fff;color:var(--gris);border-radius:99px;padding:4px 10px;
+  font-size:11.5px;font-weight:700;cursor:pointer;margin-right:5px}
+.mini.on{background:var(--verde);border-color:var(--verde);color:#fff}
+.reg{border:1px solid var(--linea);border-left:3px solid var(--verde);border-radius:10px;padding:11px;margin-bottom:8px;cursor:pointer}
+.reg.no{border-left-color:var(--vino)}
+.reg:hover{background:#f7faf8}
+.reg .rh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px}
+.pill{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:5px;
+  background:rgba(0,132,61,.12);color:var(--verde-osc);white-space:nowrap}
+.pill.no{background:rgba(166,40,40,.12);color:var(--vino)}
+.pill.amb{background:rgba(233,164,0,.16);color:#8a6200}
+.pill.gris{background:var(--linea);color:var(--gris)}
+.det{margin-top:11px;padding-top:11px;border-top:1px solid var(--linea);cursor:default}
+.det .motivo{background:#fdf3f3;border-left:3px solid var(--vino);border-radius:0 7px 7px 0;padding:9px 11px;
+  margin-bottom:10px;font-size:12.5px;color:#7a1f1f}
+.det .meta{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--gris);margin-top:9px}
+.galeria{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.galeria img{width:104px;height:104px;object-fit:cover;border-radius:8px;border:1px solid var(--linea);display:block}
+.galeria a{display:block;transition:transform .12s}
+.galeria a:hover{transform:scale(1.04)}
+.grupofoto{border:1px solid var(--linea);border-radius:10px;padding:11px;margin-bottom:9px}
+.grupofoto .gh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;margin-bottom:4px}
+.leyenda{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--gris);margin-top:11px}
+.leyenda i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.leyenda span{display:flex;align-items:center;gap:5px}
+@media(max-width:700px){.filtros .acc{max-width:none;flex:1 1 100%}table.tb{font-size:12px}}
+
+.galeria .sinmini{width:104px;height:104px;border:1px dashed var(--linea);border-radius:8px;display:grid;
+  place-items:center;align-content:center;gap:4px;font-size:20px;text-decoration:none;color:var(--gris);background:#fbfdfb}
+.galeria .sinmini span{font-size:10.5px;font-weight:700}
+
+</style>
+</head>
+<body>
+
+<div class="login" id="pLogin" style="display:none">
+  <div class="in">
+    <div class="mk"><i></i>Eficacia Perú</div>
+    <h1>Dashboard<br>Exhibe y Gana</h1>
+    <div class="sub">Análisis detallado · Acceso de supervisión</div>
+    <div class="err" id="loginErr"></div>
+    <div class="campo"><label>Usuario</label>
+      <input class="entrada" id="inpUsr" placeholder="Nombre y apellido" autocapitalize="none" autocomplete="username"></div>
+    <div class="campo"><label>Contraseña</label>
+      <input class="entrada" id="inpPwd" type="password" placeholder="••••••••" autocapitalize="characters" autocomplete="current-password"></div>
+    <button class="btn lima" style="margin-top:6px" onclick="entrar()">Ingresar</button>
+  </div>
+</div>
+
+<div id="cabecera" style="display:none">
+  <header class="top">
+    <div class="top-in ancho">
+      <div><div class="marca"><i></i>Eficacia Perú</div><h1>Dashboard · Exhibe y Gana</h1></div>
+      <div class="der">
+        <span class="gps ok"><span class="punto"></span><span id="estado">—</span></span>
+        <span class="usr"><b id="usrNom">—</b><button onclick="salir()">Salir</button></span>
+      </div>
+    </div>
+  </header>
+  <div class="tabs ancho">
+    <button class="tab on" data-v="resumen"   onclick="verVista('resumen')">Resumen</button>
+    <button class="tab"    data-v="sku"       onclick="verVista('sku')">SKU</button>
+    <button class="tab"    data-v="registros" onclick="verVista('registros')">Registros</button>
+    <button class="tab"    data-v="fotos"     onclick="verVista('fotos')">Fotos</button>
+    <button class="tab"    data-v="alertas"   onclick="verVista('alertas')">Alertas</button>
+  </div>
+</div>
+
+<div class="dash" id="panel" style="display:none">
+  <div class="filtros">
+    <div class="f"><label>Corte</label><select id="fCorte"></select></div>
+    <div class="f"><label>Mercado</label><select id="fMercado"></select></div>
+    <div class="f"><label>Mercaderista</label><select id="fMerc"></select></div>
+    <div class="f"><label>Marca</label><select id="fMarca"></select></div>
+    <div class="f acc">
+      <button class="btn sec chico" onclick="recargar()">↻ Actualizar</button>
+      <button class="btn pri chico" onclick="exportarExcel()">⬇ Excel</button>
+    </div>
+  </div>
+  <div class="kpis" id="kpis"></div>
+  <div id="contenido"></div>
+</div>
+
+<div class="exito" id="toast"></div>
+<script>
+/* ============================================================
+   PILOTO EXHIBE Y GANA · Datos maestros y configuración
+   Editar SOLO este archivo para altas/bajas y parámetros.
+   ============================================================ */
+
+
+
+/* --- 2. Accesos ---------------------------------------------- */
+const USUARIOS = [
+  {u:"ROSARIO FUENTES", p:"MERCASTS2",  rol:"merc", nom:"Rosario Fuentes"},
+  {u:"KAREN RIOS",      p:"MERCASTS4",  rol:"merc", nom:"Karen Rios"},
+  {u:"SANDRA MOGOLLON", p:"MERCASTS3",  rol:"merc", nom:"Sandra Mogollón"},
+  {u:"SUPERVISOR",      p:"SUPEXG2026", rol:"sup",  nom:"Supervisor STS"}
+];
+
+/* --- 3. Cortes del piloto (2026) ------------------------------ */
+const CORTES = [
+  {n:1,  ini:"2026-08-29", fin:"2026-08-31", tipo:"AMBOS", et:"29/08 – 31/08"},
+  {n:2,  ini:"2026-09-04", fin:"2026-09-05", tipo:"STOCK", et:"04/09 – 05/09"},
+  {n:3,  ini:"2026-09-11", fin:"2026-09-12", tipo:"AMBOS", et:"11/09 – 12/09"},
+  {n:4,  ini:"2026-09-18", fin:"2026-09-19", tipo:"STOCK", et:"18/09 – 19/09"},
+  {n:5,  ini:"2026-09-25", fin:"2026-09-26", tipo:"AMBOS", et:"25/09 – 26/09"},
+  {n:6,  ini:"2026-10-02", fin:"2026-10-03", tipo:"AMBOS", et:"02/10 – 03/10"},
+  {n:7,  ini:"2026-10-09", fin:"2026-10-10", tipo:"STOCK", et:"09/10 – 10/10"},
+  {n:8,  ini:"2026-10-16", fin:"2026-10-17", tipo:"AMBOS", et:"16/10 – 17/10"},
+  {n:9,  ini:"2026-10-23", fin:"2026-10-24", tipo:"STOCK", et:"23/10 – 24/10"},
+  {n:10, ini:"2026-10-30", fin:"2026-10-31", tipo:"AMBOS", et:"30/10 – 31/10"}
+];
+const ETIQ_TIPO = {AMBOS:"Stock y Boletas", STOCK:"Solo Stock"};
+
+/* --- 4. Motivos de no ejecución ------------------------------- */
+const MOTIVOS_STOCK = [
+  "No autoriza el ingreso al almacén",
+  "Almacén cerrado / no hay llave",
+  "Dueño o encargado ausente",
+  "No permite tomar fotos",
+  "PDV cerrado el día de la visita",
+  "Cliente sin tiempo / mucha afluencia",
+  "Mercadería aún no llega del distribuidor",
+  "Otro motivo (detallar)"
+];
+const MOTIVOS_BOLETA = [
+  "No realizó compra en el periodo",
+  "Compró pero no conserva la boleta",
+  "No autoriza mostrar la boleta",
+  "La boleta la tiene el contador / administración",
+  "Compra pendiente de facturación",
+  "PDV cerrado el día de la visita",
+  "Otro motivo (detallar)"
+];
+
+const SKUS = [{"n": "Shampoo Original x 400ml", "m": "Johnson's Baby", "id": "SKU001"}, {"n": "Shampoo Original x 750ml", "m": "Johnson's Baby", "id": "SKU002"}, {"n": "Shampoo Original x 200ml", "m": "Johnson's Baby", "id": "SKU003"}, {"n": "Shampoo Original x 100ml", "m": "Johnson's Baby", "id": "SKU004"}, {"n": "Shampoo Original Display x 10ml", "m": "Johnson's Baby", "id": "SKU005"}, {"n": "Shampoo Hidratación Intensa x 400ml", "m": "Johnson's Baby", "id": "SKU006"}, {"n": "Shampoo Manzanilla x 100ml", "m": "Johnson's Baby", "id": "SKU007"}, {"n": "Shampoo Manzanilla x 200ml", "m": "Johnson's Baby", "id": "SKU008"}, {"n": "Shampoo Manzanilla x 400ml", "m": "Johnson's Baby", "id": "SKU009"}, {"n": "Shampoo Manzanilla x 750ml", "m": "Johnson's Baby", "id": "SKU010"}, {"n": "Shampoo Manzanilla x 1000ml", "m": "Johnson's Baby", "id": "SKU011"}, {"n": "Shampoo Romero y Melanina x 750ml", "m": "Johnson's Baby", "id": "SKU012"}, {"n": "Acondicionador Manzanilla x 400ml", "m": "Johnson's Baby", "id": "SKU013"}, {"n": "Shampoo Manzanilla Display x 10ml", "m": "Johnson's Baby", "id": "SKU014"}, {"n": "Shampoo Hidratación Intensa x 750ml", "m": "Johnson's Baby", "id": "SKU015"}, {"n": "Shampoo Fragancia Prolongada x750ml", "m": "Johnson's Baby", "id": "SKU016"}, {"n": "Shampoo Gotas de Brillo x 200ml", "m": "Johnson's Baby", "id": "SKU017"}, {"n": "Shampoo Gotas de Brillo x 400ml", "m": "Johnson's Baby", "id": "SKU018"}, {"n": "Shampoo Gotas de Brillo x 750ml", "m": "Johnson's Baby", "id": "SKU019"}, {"n": "Spray Gotas de Brillo x 200ml", "m": "Johnson's Baby", "id": "SKU020"}, {"n": "Acondicionador Original x 400ml", "m": "Johnson's Baby", "id": "SKU021"}, {"n": "Acondicionador Hidratación Int x 400ml", "m": "Johnson's Baby", "id": "SKU022"}, {"n": "Acondicionador Hidratación Int x 200ml", "m": "Johnson's Baby", "id": "SKU023"}, {"n": "Crema para Peinar Hidratación Int x 200ml", "m": "Johnson's Baby", "id": "SKU024"}, {"n": "Shampoo x 100ml Jetpack + Polvo de Almidon", "m": "Johnson's Baby", "id": "SKU025"}, {"n": "Shampoo Fragancia Prolongada x200ml", "m": "Johnson's Baby", "id": "SKU026"}, {"n": "Shampoo Fragancia Prolongada x400ml", "m": "Johnson's Baby", "id": "SKU027"}, {"n": "Acondicionador Fragancia Prol x 200ml", "m": "Johnson's Baby", "id": "SKU028"}, {"n": "Spray Fragancia Prolongada x 200ml", "m": "Johnson's Baby", "id": "SKU029"}, {"n": "Acondicionador Gotas de Brillo x 400ml", "m": "Johnson's Baby", "id": "SKU030"}, {"n": "Acondicionador Fuerza y Vitamina x 400ml", "m": "Johnson's Baby", "id": "SKU031"}, {"n": "Acondicionador Fuerza y Vitamina x 200ml", "m": "Johnson's Baby", "id": "SKU032"}, {"n": "Shampoo Fuerza y Vitamina x 200ml", "m": "Johnson's Baby", "id": "SKU033"}, {"n": "Shampoo Fuerza y Vitamina x 400ml", "m": "Johnson's Baby", "id": "SKU034"}, {"n": "Shampoo Fuerza y Vitamina x 750ml", "m": "Johnson's Baby", "id": "SKU035"}, {"n": "Shampoo Fuerza y Vitamina x 1000ml", "m": "Johnson's Baby", "id": "SKU036"}, {"n": "Spray Fuerza y vitamina x 200ml", "m": "Johnson's Baby", "id": "SKU037"}, {"n": "Shampoo Gotas de Brillo x 750ml + Acondicionador x200ml", "m": "Johnson's Baby", "id": "SKU038"}, {"n": "Shampoo Original x 750ml + 200ml", "m": "Johnson's Baby", "id": "SKU039"}, {"n": "Shampoo Manzanilla x 750ml + 200ml", "m": "Johnson's Baby", "id": "SKU040"}, {"n": "Shampoo Original x 1000ml", "m": "Johnson's Baby", "id": "SKU041"}, {"n": "Shampoo Fragancia Prolongada x750ml + Acondicionador x200ml", "m": "Johnson's Baby", "id": "SKU042"}, {"n": "Acondicionador Gotas de Brillo x 200ml", "m": "Johnson's Baby", "id": "SKU043"}, {"n": "Shampoo Gotas de Brillo Display x 25ml", "m": "Johnson's Baby", "id": "SKU044"}, {"n": "Shampoo Hidratación Intensa x 1000ml", "m": "Johnson's Baby", "id": "SKU045"}, {"n": "Shampoo Gotas de Brillo x 1000ml", "m": "Johnson's Baby", "id": "SKU046"}, {"n": "Shampoo Manzanilla Display x 25ml", "m": "Johnson's Baby", "id": "SKU047"}, {"n": "Shampoo Original Display x 25ml", "m": "Johnson's Baby", "id": "SKU048"}, {"n": "Baño Líquido Recién Nacido x 200ml", "m": "Johnson's Baby", "id": "SKU049"}, {"n": "Baño Líquido Glicerina x 200ml", "m": "Johnson's Baby", "id": "SKU050"}, {"n": "Baño Líquido Glicerina x 400ml", "m": "Johnson's Baby", "id": "SKU051"}, {"n": "Baño Líquido Antes de Dormir x 200ml", "m": "Johnson's Baby", "id": "SKU052"}, {"n": "Baño Líquido Avena x 400ml", "m": "Johnson's Baby", "id": "SKU053"}, {"n": "Baño Líquido Libre de Gérmenes x 200ml", "m": "Johnson's Baby", "id": "SKU054"}, {"n": "Baño Líquido Libre de Gérmenes x 400ml", "m": "Johnson's Baby", "id": "SKU055"}, {"n": "Baño Líquido Hidratación Intensa x 400ml", "m": "Johnson's Baby", "id": "SKU056"}, {"n": "Crema Líquida Original (Rosa) x 200ml", "m": "Johnson's Baby", "id": "SKU057"}, {"n": "Crema Líquida Original (Rosa) x 400ml", "m": "Johnson's Baby", "id": "SKU058"}, {"n": "Crema Líquida Recién Nacido x 200ml", "m": "Johnson's Baby", "id": "SKU059"}, {"n": "Crema Líquida Antes de Dormir x 200ml", "m": "Johnson's Baby", "id": "SKU060"}, {"n": "Crema Líquida Avena x 400ml", "m": "Johnson's Baby", "id": "SKU061"}, {"n": "Crema Líquida Hidratación Intensa x 400ml", "m": "Johnson's Baby", "id": "SKU062"}, {"n": "Loción Anti Mosquitos x 200ml", "m": "Johnson's Baby", "id": "SKU063"}, {"n": "Crema Líquida Original (Rosa) x 800ml", "m": "Johnson's Baby", "id": "SKU064"}, {"n": "Crema Líquida Avena x 800ml", "m": "Johnson's Baby", "id": "SKU065"}, {"n": "Aceite Original x 50ml", "m": "Johnson's Baby", "id": "SKU066"}, {"n": "Aceite Original x 100ml", "m": "Johnson's Baby", "id": "SKU067"}, {"n": "Aceite Original x 300ml", "m": "Johnson's Baby", "id": "SKU068"}, {"n": "Aceite Aloe x 100ml", "m": "Johnson's Baby", "id": "SKU069"}, {"n": "Aceite Antes de Dormir x 100ml", "m": "Johnson's Baby", "id": "SKU070"}, {"n": "Aceite Antes de Dormir x 300ml", "m": "Johnson's Baby", "id": "SKU071"}, {"n": "Aceite Recién Nacido x 100ml", "m": "Johnson's Baby", "id": "SKU072"}, {"n": "Talco Polvo de Almidón x 200gr", "m": "Johnson's Baby", "id": "SKU073"}, {"n": "Talco Polvo de Almidón x 400gr", "m": "Johnson's Baby", "id": "SKU074"}, {"n": "Talco Antes de Dormir x 400gr", "m": "Johnson's Baby", "id": "SKU075"}, {"n": "Talco Antes de Dormir x 200gr", "m": "Johnson's Baby", "id": "SKU076"}, {"n": "Talco Original x 400gr", "m": "Johnson's Baby", "id": "SKU077"}, {"n": "Talco Original x 100gr", "m": "Johnson's Baby", "id": "SKU078"}, {"n": "Talco Original x 200gr", "m": "Johnson's Baby", "id": "SKU079"}, {"n": "Talco Original x 600gr", "m": "Johnson's Baby", "id": "SKU080"}, {"n": "Colonia Sonrisas (Amarilla) x 100ml", "m": "Johnson's Baby", "id": "SKU081"}, {"n": "Colonia Sonrisas (Amarilla) x 200ml", "m": "Johnson's Baby", "id": "SKU082"}, {"n": "Colonia Antes de Dormir (Violeta) x 200ml", "m": "Johnson's Baby", "id": "SKU083"}, {"n": "Jabón Baby Antes de Dormir x 75gr", "m": "Johnson's Baby", "id": "SKU084"}, {"n": "Jabón Baby Original x 75gr", "m": "Johnson's Baby", "id": "SKU085"}, {"n": "Jabón Baby Avena x 75gr", "m": "Johnson's Baby", "id": "SKU086"}, {"n": "Jabón Baby Humectante x 75gr", "m": "Johnson's Baby", "id": "SKU087"}, {"n": "Jabón Baby Glicerina x 80gr", "m": "Johnson's Baby", "id": "SKU088"}, {"n": "Jabón Baby Libre de Gérmenes x 110g (Tripack)", "m": "Johnson's Baby", "id": "SKU089"}, {"n": "Jabón Baby Avena x 110gr (Tripack)", "m": "Johnson's Baby", "id": "SKU090"}, {"n": "Jabón Baby Original x 110gr (Tripack)", "m": "Johnson's Baby", "id": "SKU091"}, {"n": "Jabón Baby Original x 110gr", "m": "Johnson's Baby", "id": "SKU092"}, {"n": "Jabón Baby Humectante x 110gr", "m": "Johnson's Baby", "id": "SKU093"}, {"n": "Jabón Baby Humectante x 110gr (Tripack)", "m": "Johnson's Baby", "id": "SKU094"}, {"n": "Jabón Baby Antes de Dormir x 110gr (Tripack)", "m": "Johnson's Baby", "id": "SKU095"}, {"n": "JB Estuche Grande", "m": "Johnson's Baby", "id": "SKU096"}, {"n": "JB Estuche Pequeño", "m": "Johnson's Baby", "id": "SKU097"}, {"n": "JB Estuche Recien Nacido", "m": "Johnson's Baby", "id": "SKU098"}, {"n": "Cotonetes x 75u", "m": "Johnson's Baby", "id": "SKU099"}, {"n": "Cotonetes x 300u", "m": "Johnson's Baby", "id": "SKU100"}, {"n": "Cotonetes Pote x 150u", "m": "Johnson's Baby", "id": "SKU101"}, {"n": "Protectores Mamarios x 24", "m": "Johnson's Baby", "id": "SKU102"}, {"n": "Desitin Creamy x 57gr", "m": "Desitin", "id": "SKU103"}, {"n": "Desitin x 28gr", "m": "Desitin", "id": "SKU104"}, {"n": "Desitin x 113gr", "m": "Desitin", "id": "SKU105"}, {"n": "Jabón Adultos Iluminadora x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU106"}, {"n": "Jabón Adultos Rosas y Sándalo x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU107"}, {"n": "Jabón Adultos Avena x 110gr (Sixpack)", "m": "Johnson's Adultos", "id": "SKU108"}, {"n": "Jabón Adultos Renovadora Granada x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU109"}, {"n": "Jabón Adultos Original x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU110"}, {"n": "Jabón Adultos Avena x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU111"}, {"n": "Jabón Adultos Original Avena x 110gr (Sixpack)", "m": "Johnson's Adultos", "id": "SKU112"}, {"n": "Jabón Adultos Refrescante Uva x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU113"}, {"n": "Jabón Adultos Antibacterial UF x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU114"}, {"n": "Jabón Adultos Antibacterial x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU115"}, {"n": "Jabón Adultos Aloe x 110gr (Tripack)", "m": "Johnson's Adultos", "id": "SKU116"}, {"n": "Neko Extra Protección x 75gr", "m": "Neko", "id": "SKU117"}, {"n": "Neko Extra Suave x 75gr", "m": "Neko", "id": "SKU118"}, {"n": "Neko Avena x 75gr", "m": "Neko", "id": "SKU119"}, {"n": "Neko Aloe x 75gr", "m": "Neko", "id": "SKU120"}, {"n": "Neko Extra Protección x 110gr", "m": "Neko", "id": "SKU121"}, {"n": "Neko Extra Suave x 110gr", "m": "Neko", "id": "SKU122"}, {"n": "Neko Avena x 110gr", "m": "Neko", "id": "SKU123"}, {"n": "Neko Aloe x 110gr", "m": "Neko", "id": "SKU124"}, {"n": "Hilo Dental Reach Menta x 50mts", "m": "Reach", "id": "SKU125"}, {"n": "Hilo Dental Reach Regular x 50mts", "m": "Reach", "id": "SKU126"}, {"n": "Hilo Dental Reach Menta x 100mts", "m": "Reach", "id": "SKU127"}, {"n": "Listerine Cool Mint x 180ml", "m": "Listerine", "id": "SKU128"}, {"n": "Listerine Cool Mint x 500ml", "m": "Listerine", "id": "SKU129"}, {"n": "Listerine Cool Mint x 1000ml", "m": "Listerine", "id": "SKU130"}, {"n": "Listerine Cool Mint Zero x 1500ml", "m": "Listerine", "id": "SKU131"}, {"n": "Listerine Cool Mint Zero x 1000ml", "m": "Listerine", "id": "SKU132"}, {"n": "Listerine Cool Mint Zero x 180ml", "m": "Listerine", "id": "SKU133"}, {"n": "Listerine Cool Mint Zero x 500ml", "m": "Listerine", "id": "SKU134"}, {"n": "Listerine Antisarro x 180ml", "m": "Listerine", "id": "SKU135"}, {"n": "Listerine Antisarro x 500ml", "m": "Listerine", "id": "SKU136"}, {"n": "Listerine Antisarro x 1000ml", "m": "Listerine", "id": "SKU137"}, {"n": "Listerine Total Care x 180ml", "m": "Listerine", "id": "SKU138"}, {"n": "Listerine Total Care x 500ml", "m": "Listerine", "id": "SKU139"}, {"n": "Listerine Total Care x 1000ml", "m": "Listerine", "id": "SKU140"}, {"n": "Listerine Dientes & Encías x 180ml", "m": "Listerine", "id": "SKU141"}, {"n": "Listerine Dientes & Encías x 500ml", "m": "Listerine", "id": "SKU142"}, {"n": "Listerine Total Care Zero x 180ml", "m": "Listerine", "id": "SKU143"}, {"n": "Listerine Total Care Zero x 500ml", "m": "Listerine", "id": "SKU144"}, {"n": "Listerine Total Care Zero x 1500ml", "m": "Listerine", "id": "SKU145"}, {"n": "Listerine Anticaries Zero x 180ml", "m": "Listerine", "id": "SKU146"}, {"n": "Listerine Anticaries Zero x 500ml", "m": "Listerine", "id": "SKU147"}, {"n": "Listerine Anticaries Zero x 1500ml", "m": "Listerine", "id": "SKU148"}, {"n": "Listerine Antisarro Zero x 180ml", "m": "Listerine", "id": "SKU149"}, {"n": "Listerine Antisarro Zero x 500ml", "m": "Listerine", "id": "SKU150"}, {"n": "Listerine Antisarro Zero x 1000ml", "m": "Listerine", "id": "SKU151"}, {"n": "Listerine Whitening x 236ml", "m": "Listerine", "id": "SKU152"}, {"n": "Listerine Whitening x 473ml", "m": "Listerine", "id": "SKU153"}, {"n": "Stayfree Adapt Plus Noche y Día x 8u", "m": "Stayfree", "id": "SKU154"}, {"n": "Stayfree Especial x 42u", "m": "Stayfree", "id": "SKU155"}, {"n": "Stayfree Especial x 12u", "m": "Stayfree", "id": "SKU156"}, {"n": "Stayfree Especial UF x 12u", "m": "Stayfree", "id": "SKU157"}, {"n": "Stayfree Adapt Plus C/A x 8u", "m": "Stayfree", "id": "SKU158"}, {"n": "Stayfree Adapt Plus C/A x 16u", "m": "Stayfree", "id": "SKU159"}, {"n": "Stayfree Adapt Plus UF x 8u", "m": "Stayfree", "id": "SKU160"}, {"n": "Stayfree Adapt Plus UF x 32u", "m": "Stayfree", "id": "SKU161"}, {"n": "Tampón Regular MEDIO x 8u", "m": "Stayfree", "id": "SKU162"}, {"n": "Tampón Regular SUPER x 8u", "m": "Stayfree", "id": "SKU163"}, {"n": "Daktarin 2.0% 40 mg/g GEL ORAL", "m": "Daktarin", "id": "SKU164"}, {"n": "Doloflam Extra Forte x 100u", "m": "Doloflam", "id": "SKU165"}, {"n": "Doloflam 200mg x 40u", "m": "Doloflam", "id": "SKU166"}, {"n": "Mylanta Menta x 240ml", "m": "Mylanta", "id": "SKU167"}, {"n": "Mylanta Fresa x 240ml", "m": "Mylanta", "id": "SKU168"}, {"n": "JB Estuche Grande (nuevo)", "m": "Johnson's Baby", "id": "SKU169"}, {"n": "LISTERINE MELANCIA 12X500ML EXP", "m": "Listerine", "id": "SKU170"}, {"n": "LIST CUIDADO TOTAL ZERO 6X1L", "m": "Listerine", "id": "SKU171"}, {"n": "LIST TOTAL CARE KIDS BBLST 6UX500ML F2", "m": "Listerine", "id": "SKU172"}, {"n": "DESITIN CREAMY 12 X 113 GM EXP", "m": "Desitin", "id": "SKU173"}, {"n": "JB BAÑO LIQUIDO MANZANILLA 400ML", "m": "Johnson's Baby", "id": "SKU174"}, {"n": "Johnsons Baby Shampoo 2 en 1 400ml", "m": "Johnson's Baby", "id": "SKU175"}, {"n": "JS BABY REF SH GOLD MONO 12X180ML EXP", "m": "Johnson's Baby", "id": "SKU176"}, {"n": "Johnsons Baby Shampoo original Refill (Doypack) 180ml", "m": "Johnson's Baby", "id": "SKU177"}, {"n": "Listerine Sandia x500ml", "m": "Listerine", "id": "SKU178"}, {"n": "Listerine Kids x 500ml", "m": "Listerine", "id": "SKU179"}];
+const CLIENTES = [{"id": "348", "nombre": "Andrea Precio Justo Sac", "involves": "BM VENTA Y DISTRIBUCION DE ABARRATOS / ANDREA PRECIO JUSTO", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "ESTEBAN SALMÓN # 859-CAQUETA", "mercado": "CAQUETA", "red": "MERCADO MAYORISTA", "merc": "Rosario Fuentes"}, {"id": "404", "nombre": "Inversiones Angie Y Andres Eirl /Victor Veramendi Silvestre", "involves": "INVERSIONES ANGIE Y ANDRES", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "TOMAS MOYA # 683-CAQUETA", "mercado": "CAQUETA", "red": "MERCADO MAYORISTA", "merc": "Rosario Fuentes"}, {"id": "427", "nombre": "Jerrica Mercantil Eirl", "involves": "VICOFER / JERRICA", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "AV LOS HEROES 515 PTO.48-CIUDAD DE DIOS", "mercado": "CIUDAD DE DIOS", "red": "MERCADO MAYORISTA", "merc": "Sandra Mogollón"}, {"id": "417", "nombre": "Inversiones P Y D", "involves": "INVERSIONES P Y D", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "JR. PISAGUA 940-LA PARADA", "mercado": "LA PARADA", "red": "MERCADO MAYORISTA", "merc": "Rosario Fuentes"}, {"id": "STS 43", "nombre": "Distribuidora JOPAL SAC", "involves": "DISTRIBUIDORA JOPAL SAC", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "Jr Pisagua 979", "mercado": "LA PARADA", "red": "MERCADO MAYORISTA", "merc": "Rosario Fuentes"}, {"id": "16426", "nombre": "Diana Rosa Huaman", "involves": "NEGOCIACIONES D&D", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "AV PISAGUA# 965", "mercado": "LA PARADA", "red": "MERCADO MAYORISTA", "merc": "Rosario Fuentes"}, {"id": "499", "nombre": "Ecovent Group Srl /Gloria Garay", "involves": "ECOVENT GROUP", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "AV. LA CULTURA 701 PASAJE C - 73-PRODUCTORES", "mercado": "PRODUCTORES", "red": "MERCADO MAYORISTA", "merc": "Karen Rios"}, {"id": "16430", "nombre": "Ecovent Group Srl", "involves": "ECOVENT GROUP SRL", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "AV. LA CULTURA 701 PASAJE A - 16-PRODUCTORES", "mercado": "PRODUCTORES", "red": "MERCADO MAYORISTA", "merc": "Karen Rios"}, {"id": "546", "nombre": "Comercial Jhire /Miguel Prez", "involves": "NEGOCIACIONES JHIRE SAC", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "AV. LA CULTURA 701 PASAJE D - 12-PRODUCTORES", "mercado": "PRODUCTORES", "red": "MERCADO MAYORISTA", "merc": "Karen Rios"}, {"id": "419", "nombre": "Inversiones Paraguall Sac - Elvira Huerto Moya", "involves": "INVERSIONES PARAGUALL", "m1": "Si", "m2": "Si", "canal": "STS", "direccion": "AV. PROLG. 1ERO DE MAYO INT. 304-UNICACHI SUR", "mercado": "UNICACHI", "red": "MERCADO MAYORISTA", "merc": "Sandra Mogollón"}];
+
+/* ============================================================
+   PILOTO EXHIBE Y GANA · Núcleo compartido (app + dashboard)
+   ============================================================ */
+
+/* ---------- utilidades ---------- */
+const $ = id => document.getElementById(id);
+const qs = s => document.querySelector(s);
+const norm = t => String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const soles = n => "S/ " + (Number(n) || 0).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const miles = n => (Number(n) || 0).toLocaleString("es-PE");
+const hoyISO = () => new Date().toISOString().slice(0, 10);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+function ahora() {
+  const d = new Date(), p = n => String(n).padStart(2, "0");
+  return { fecha: `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`, hora: `${p(d.getHours())}:${p(d.getMinutes())}`, iso: d.toISOString() };
+}
+function fechaCorta(iso) { return iso ? iso.split("-").reverse().join("/") : ""; }
+function mesesHasta(iso) {
+  if (!iso) return null;
+  return Math.round((new Date(iso) - new Date()) / (1000 * 60 * 60 * 24 * 30.44));
+}
+function toast(m) {
+  const t = $("toast"); if (!t) return;
+  t.innerHTML = m; t.classList.add("on");
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("on"), 2800);
+}
+
+/* ---------- cortes ---------- */
+function corteDe(iso) { return CORTES.find(c => iso >= c.ini && iso <= c.fin) || null; }
+function corteActivo() {
+  const h = hoyISO();
+  return corteDe(h) || CORTES.find(c => c.ini > h) || CORTES[CORTES.length - 1];
+}
+
+/* ---------- sesión ---------- */
+/* La sesión vive en localStorage: al usarse como acceso directo de
+   Chrome, cerrar la pestaña no debe expulsar a la mercaderista.   */
+const Sesion = {
+  guardar(u) { try { localStorage.setItem("eyg:sesion", JSON.stringify(u)); } catch (e) { window.__sesion = u; } },
+  leer() {
+    try { const s = localStorage.getItem("eyg:sesion"); return s ? JSON.parse(s) : (window.__sesion || null); }
+    catch (e) { return window.__sesion || null; }
+  },
+  cerrar() { try { localStorage.removeItem("eyg:sesion"); } catch (e) { } window.__sesion = null; }
+};
+function validarAcceso(usuario, clave) {
+  const f = USUARIOS.find(x => norm(x.u) === norm(usuario));
+  if (!f) return { ok: false, msg: "Usuario no reconocido. Escribe nombre y apellido." };
+  if (f.p !== clave) return { ok: false, msg: "Contraseña incorrecta. Recuerda que va en MAYÚSCULAS." };
+  return { ok: true, user: { u: f.u, nom: f.nom, rol: f.rol } };
+}
+
+/* ============================================================
+   CAPA DE DATOS
+   Con CONFIG.API_URL  -> Google Apps Script (Sheets + Drive)
+   Sin CONFIG.API_URL  -> almacenamiento local del navegador
+   ============================================================ */
+const DB = {
+  memoria: [],
+  get remoto() { return !!(CONFIG.API_URL && CONFIG.API_URL.indexOf("http") === 0); },
+
+  _local() {
+    try { return JSON.parse(localStorage.getItem("eyg:registros") || "[]"); }
+    catch (e) { return this.memoria; }
+  },
+  _localSet(arr) {
+    this.memoria = arr;
+    try { localStorage.setItem("eyg:registros", JSON.stringify(arr)); } catch (e) { }
+  },
+
+  async listar(corteN) {
+    let regs;
+    if (this.remoto) {
+      try {
+        const r = await fetch(CONFIG.API_URL + "?accion=listar" + (corteN ? "&corte=" + corteN : ""));
+        const j = await r.json();
+        regs = j.ok ? j.datos : [];
+      } catch (e) { regs = this._local(); }
+    } else regs = this._local();
+    return corteN ? regs.filter(r => Number(r.corte) === Number(corteN)) : regs;
+  },
+
+  /* reg = metadata + miniaturas ; fotos = imágenes completas (solo backend) */
+  async guardar(reg, fotos) {
+    reg.id = reg.id || uid();
+    if (this.remoto) {
+      try {
+        const r = await fetch(CONFIG.API_URL, { method: "POST", body: JSON.stringify({ accion: "guardar", reg, fotos }) });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.msg || "error");
+        return { ok: true, remoto: true };
+      } catch (e) {
+        const a = this._local(); a.push(reg); this._localSet(a);
+        return { ok: true, remoto: false, msg: "Sin conexión: guardado en el equipo. Se debe reintentar el envío." };
+      }
+    }
+    const a = this._local(); a.push(reg); this._localSet(a);
+    return { ok: true, remoto: false };
+  }
+};
+
+/* ---------- cartera asignada ---------- */
+/* Cada PDV pertenece a una mercaderista (campo "merc" en CLIENTES).
+   El supervisor ve las 9; cada mercaderista solo la suya.        */
+function carteraDe(nombre) {
+  if (!nombre || nombre === "todos") return CLIENTES.slice();
+  return CLIENTES.filter(c => norm(c.merc) === norm(nombre));
+}
+function responsableDe(idPdv) {
+  const c = CLIENTES.find(x => x.id === idPdv);
+  return c ? c.merc : "";
+}
+
+/* ---------- relevos guardados en el equipo sin enviar ---------- */
+DB.pendientes = function () { return this.remoto ? this._local() : []; };
+
+DB.reenviar = async function (avisar) {
+  const cola = this._local(); if (!cola.length) return { enviados: 0, fallados: 0 };
+  let enviados = 0; const quedan = [];
+  for (let k = 0; k < cola.length; k++) {
+    avisar && avisar(k + 1, cola.length);
+    try {
+      const r = await fetch(CONFIG.API_URL, {
+        method: "POST",
+        body: JSON.stringify({ accion: "guardar", reg: cola[k], fotos: [] })
+      });
+      const j = await r.json();
+      if (j.ok) { if (!j.duplicado) enviados++; } else quedan.push(cola[k]);
+    } catch (e) { quedan.push(cola[k]); }
+  }
+  this._localSet(quedan);
+  return { enviados, fallados: quedan.length };
+};
+
+/* ---------- estado de cobertura por PDV ---------- */
+/* estado del relevo: "OK" (relevado) | "NO" (no permitido / sin boletas) */
+/* El stock se releva en DOS ubicaciones: almacén y exhibición.
+   El PDV no está completo hasta tener ambas.                       */
+const UBICACIONES = [
+  { k: "ALMACEN",    et: "Almacén",    corto: "Alm", icono: "📦",
+    foto: "Foto del almacén", ayudaFoto: "Las cajas guardadas, para evidenciar la compra." },
+  { k: "EXHIBICION", et: "Exhibición", corto: "Exh", icono: "🏪",
+    foto: "Foto de la exhibición", ayudaFoto: "El producto exhibido en góndola, mostrador o gancho." }
+];
+function ubic(k) { return UBICACIONES.find(u => u.k === k) || UBICACIONES[0]; }
+
+function estadoPDV(regs, idPdv) {
+  const del = regs.filter(r => r.pdv === idPdv);
+  const stocks = del.filter(r => r.tipo === "stock");
+  const b = del.find(r => r.tipo === "boleta");
+  const noPermite = stocks.some(r => r.estado === "NO");
+  const alm = stocks.some(r => r.estado === "OK" && r.ubicacion === "ALMACEN");
+  const exh = stocks.some(r => r.estado === "OK" && r.ubicacion === "EXHIBICION");
+  let stock = null;
+  if (noPermite) stock = "NO";
+  else if (alm && exh) stock = "OK";
+  else if (alm || exh) stock = "PARCIAL";
+  return { stock, almacen: alm, exhibicion: exh, boleta: b ? b.estado : null, regs: del };
+}
+/* qué ubicación falta relevar en este PDV */
+function faltaUbicacion(regs, idPdv) {
+  const e = estadoPDV(regs, idPdv);
+  if (e.stock === "NO") return null;
+  if (!e.almacen) return "ALMACEN";
+  if (!e.exhibicion) return "EXHIBICION";
+  return null;
+}
+/* Criterio de avance:
+   VERDE  (relevado)  = respondió todos los módulos del corte y SÍ pudo
+                        levantar el stock. Que el PDV no tenga boletas
+                        es un resultado válido, no un pendiente.
+   VINO   (bloqueado) = gestionó la visita pero no le dejaron ver el
+                        stock físico, que es el dato principal.
+   ÁMBAR  (parcial)   = le falta responder uno de los dos módulos.
+   GRIS               = sin ningún registro.                          */
+function resumenPDV(regs, cliente, corte) {
+  const soloStock = corte.tipo === "STOCK";
+  const e = estadoPDV(regs, cliente.id);
+  const stockList = e.stock === "OK" || e.stock === "NO";
+  const bolList = soloStock ? true : e.boleta !== null;
+  const gestionado = stockList && bolList;
+  const relevado = gestionado && e.stock === "OK";
+  const bloqueado = gestionado && e.stock !== "OK";
+  const sinBoleta = e.boleta === "NO";
+  const algo = e.stock !== null || e.boleta !== null;
+  return { ...e, gestionado, relevado, bloqueado, sinBoleta,
+           parcial: !gestionado && algo };
+}
+
+/* ---------- geolocalización ---------- */
+const GPS = {
+  pos: null, estado: "buscando",
+  pedir(cb) {
+    if (!navigator.geolocation) { this.estado = "error"; cb && cb(); return; }
+    navigator.geolocation.getCurrentPosition(
+      p => { this.pos = { lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy) }; this.estado = "ok"; cb && cb(); },
+      () => { this.estado = "error"; cb && cb(); },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+  },
+  texto() { return this.pos ? this.pos.lat.toFixed(6) + ", " + this.pos.lng.toFixed(6) + "  (±" + this.pos.acc + " m)" : "GPS NO DISPONIBLE"; },
+  etiqueta() { return this.estado === "ok" ? "GPS ±" + this.pos.acc + " m" : this.estado === "error" ? "GPS denegado" : "Ubicando…"; }
+};
+
+/* ---------- sello de fotos ---------- */
+function cargarImg(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = r.result; };
+    r.onerror = rej; r.readAsDataURL(file);
+  });
+}
+async function sellarFoto(file, etiqueta, ctx) {
+  const img = await cargarImg(file), maxW = 1200, k = Math.min(1, maxW / img.width);
+  const w = Math.round(img.width * k), h = Math.round(img.height * k);
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const x = c.getContext("2d"); x.drawImage(img, 0, 0, w, h);
+  const t = ahora();
+  const lineas = [
+    ctx.cliente.nombre.toUpperCase(),
+    "Mercado: " + ctx.cliente.mercado + "   ·   PDV " + ctx.cliente.id,
+    t.fecha + "   ·   " + t.hora + " h",
+    "GPS " + GPS.texto(),
+    "Mercaderista: " + ctx.usuario + "   ·   Corte " + ctx.corte
+  ];
+  const F = Math.max(12, Math.round(w * 0.0235)), lh = Math.round(F * 1.42), pad = Math.round(F * 0.95);
+  const barra = pad * 2 + Math.round(F * 1.5) + lineas.length * lh, y0 = h - barra;
+  const g = x.createLinearGradient(0, y0 - F * 1.6, 0, h);
+  g.addColorStop(0, "rgba(4,51,28,0)"); g.addColorStop(.25, "rgba(4,51,28,.88)"); g.addColorStop(1, "rgba(4,51,28,.95)");
+  x.fillStyle = g; x.fillRect(0, y0 - F * 1.6, w, barra + F * 1.6);
+  x.fillStyle = "#A6CE39"; x.fillRect(0, y0, Math.round(F * .4), barra);
+  let y = y0 + pad + F; x.textBaseline = "alphabetic";
+  x.font = `800 ${Math.round(F * .92)}px Arial,Helvetica,sans-serif`; x.fillStyle = "#A6CE39";
+  x.fillText("PILOTO EXHIBE Y GANA  ·  " + etiqueta, pad + F * .6, y); y += Math.round(F * 1.5);
+  lineas.forEach((L, i) => {
+    x.font = (i === 0 ? `800 ${F}px` : `500 ${Math.round(F * .92)}px`) + " Arial,Helvetica,sans-serif";
+    x.fillStyle = i === 0 ? "#FFFFFF" : "rgba(255,255,255,.88)";
+    x.fillText(L, pad + F * .6, y); y += lh;
+  });
+  /* miniatura chica: viaja a la hoja de cálculo, que limita el
+     tamaño de cada celda. La foto completa va a Drive intacta. */
+  const tw = 170, tc = document.createElement("canvas");
+  tc.width = tw; tc.height = Math.round(h * (tw / w));
+  tc.getContext("2d").drawImage(c, 0, 0, tc.width, tc.height);
+  return { full: c.toDataURL("image/jpeg", .82), thumb: tc.toDataURL("image/jpeg", .42) };
+}
+
+/* ---------- exportación ---------- */
+function descargarCSV(filas, nombre) {
+  const csv = "\uFEFF" + filas.map(f => f.map(v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`).join(";")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = nombre; a.click();
+}
+function filasCSV(regs) {
+  const h = ["Corte", "Rango", "Tipo", "Estado", "Motivo", "Detalle", "Fecha", "Hora", "Mercaderista", "PDV", "Cliente", "Mercado",
+    "Canal", "Latitud", "Longitud", "N_Boleta", "SKU", "Marca", "Cantidad_UND", "Importe_S/", "Lote", "Vencimiento", "Fotos"];
+  const f = [h];
+  regs.forEach(r => {
+    const c = CORTES.find(x => x.n === Number(r.corte)) || { et: "" };
+    const base = [r.corte, c.et, r.tipo, r.estado, r.motivo || "", r.detalle || "", r.fecha, r.hora, r.usuario,
+      r.pdv, r.cliente, r.mercado, r.canal, r.lat || "", r.lng || "", r.numBoleta || ""];
+    if (!r.items || !r.items.length) f.push([...base, "", "", "", "", "", "", r.nFotos || 0]);
+    else r.items.forEach(i => f.push([...base, i.n, i.m, i.cant, i.monto != null ? Number(i.monto).toFixed(2) : "",
+      i.lote || "", i.vence || "", r.nFotos || 0]));
+  });
+  return f;
+}
+
+/* ============================================================
+   Generador de .xlsx (varias hojas) sin librerías externas.
+   ZIP sin compresión + CRC32 propio.
+   Uso:  descargarExcel("archivo.xlsx", [{nombre:"Hoja1", filas:[[...],[...]]}])
+   ============================================================ */
+const XLSX = (() => {
+
+  /* ---------- CRC32 ---------- */
+  const TABLA = (() => {
+    const t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+  function crc32(bytes) {
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) c = TABLA[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  const utf8 = s => new TextEncoder().encode(s);
+  const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
+
+  /* ---------- XML de una hoja ---------- */
+  function letraCol(n) {
+    let s = "";
+    while (n >= 0) { s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26) - 1; }
+    return s;
+  }
+  function hojaXML(filas) {
+    let anchos = [];
+    const cuerpo = filas.map((fila, r) => {
+      const celdas = fila.map((v, c) => {
+        anchos[c] = Math.min(52, Math.max(anchos[c] || 9, String(v == null ? "" : v).length + 2));
+        const ref = letraCol(c) + (r + 1);
+        if (v === null || v === undefined || v === "") return `<c r="${ref}"/>`;
+        const num = typeof v === "number" && isFinite(v);
+        if (num) return `<c r="${ref}"${r === 0 ? ' s="1"' : ''}><v>${v}</v></c>`;
+        return `<c r="${ref}" t="inlineStr"${r === 0 ? ' s="1"' : ''}><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
+      }).join("");
+      return `<row r="${r + 1}">${celdas}</row>`;
+    }).join("");
+    const cols = anchos.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("");
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+<cols>${cols}</cols><sheetData>${cuerpo}</sheetData></worksheet>`;
+  }
+
+  /* ---------- armado del libro ---------- */
+  function construir(hojas) {
+    const nombres = hojas.map((h, i) => (h.nombre || ("Hoja" + (i + 1))).replace(/[\\\/\?\*\[\]:]/g, " ").slice(0, 31));
+    const archivos = {};
+
+    archivos["[Content_Types].xml"] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+${hojas.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}
+</Types>`;
+
+    archivos["_rels/.rels"] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+
+    archivos["xl/workbook.xml"] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets>${nombres.map((n, i) => `<sheet name="${esc(n)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("")}</sheets>
+</workbook>`;
+
+    archivos["xl/_rels/workbook.xml.rels"] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+${hojas.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")}
+<Relationship Id="rId${hojas.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+    archivos["xl/styles.xml"] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts>
+<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF00552A"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs>
+</styleSheet>`;
+
+    hojas.forEach((h, i) => { archivos[`xl/worksheets/sheet${i + 1}.xml`] = hojaXML(h.filas || []); });
+    return archivos;
+  }
+
+  /* ---------- ZIP (método 0: sin comprimir) ---------- */
+  function zip(archivos) {
+    const partes = [], central = [];
+    let offset = 0;
+    const fecha = new Date();
+    const hora = ((fecha.getHours() << 11) | (fecha.getMinutes() << 5) | (fecha.getSeconds() / 2)) & 0xFFFF;
+    const dia = (((fecha.getFullYear() - 1980) << 9) | ((fecha.getMonth() + 1) << 5) | fecha.getDate()) & 0xFFFF;
+
+    for (const nombre in archivos) {
+      const datos = utf8(archivos[nombre]), nom = utf8(nombre), crc = crc32(datos);
+      const local = new Uint8Array(30 + nom.length);
+      const v = new DataView(local.buffer);
+      v.setUint32(0, 0x04034b50, true); v.setUint16(4, 20, true); v.setUint16(6, 0x0800, true);
+      v.setUint16(8, 0, true); v.setUint16(10, hora, true); v.setUint16(12, dia, true);
+      v.setUint32(14, crc, true); v.setUint32(18, datos.length, true); v.setUint32(22, datos.length, true);
+      v.setUint16(26, nom.length, true); v.setUint16(28, 0, true);
+      local.set(nom, 30);
+      partes.push(local, datos);
+
+      const cen = new Uint8Array(46 + nom.length);
+      const w = new DataView(cen.buffer);
+      w.setUint32(0, 0x02014b50, true); w.setUint16(4, 20, true); w.setUint16(6, 20, true);
+      w.setUint16(8, 0x0800, true); w.setUint16(10, 0, true); w.setUint16(12, hora, true); w.setUint16(14, dia, true);
+      w.setUint32(16, crc, true); w.setUint32(20, datos.length, true); w.setUint32(24, datos.length, true);
+      w.setUint16(28, nom.length, true); w.setUint16(30, 0, true); w.setUint16(32, 0, true);
+      w.setUint16(34, 0, true); w.setUint16(36, 0, true); w.setUint32(38, 0, true);
+      w.setUint32(42, offset, true);
+      cen.set(nom, 46);
+      central.push(cen);
+      offset += local.length + datos.length;
+    }
+
+    let tamCentral = 0; central.forEach(c => tamCentral += c.length);
+    const fin = new Uint8Array(22), f = new DataView(fin.buffer);
+    f.setUint32(0, 0x06054b50, true); f.setUint16(8, central.length, true);
+    f.setUint16(10, central.length, true); f.setUint32(12, tamCentral, true); f.setUint32(16, offset, true);
+
+    let total = 0;
+    [...partes, ...central, fin].forEach(p => total += p.length);
+    const salida = new Uint8Array(total);
+    let pos = 0;
+    [...partes, ...central, fin].forEach(p => { salida.set(p, pos); pos += p.length; });
+    return salida;
+  }
+
+  return {
+    bytes(hojas) { return zip(construir(hojas)); },
+    descargar(nombre, hojas) {
+      const blob = new Blob([this.bytes(hojas)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = nombre; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }
+  };
+})();
+
+/* ============================================================
+   DASHBOARD DETALLADO · Exhibe y Gana
+   ============================================================ */
+const D = { regs: [], vista: "resumen", abierto: null, ordenSKU: "und" };
+
+window.addEventListener("DOMContentLoaded", () => {
+  $("inpPwd").addEventListener("keydown", e => { if (e.key === "Enter") entrar(); });
+  const s = Sesion.leer();
+  if (s && s.rol === "sup") abrir(s); else $("pLogin").style.display = "flex";
+});
+
+function entrar() {
+  const r = validarAcceso($("inpUsr").value, $("inpPwd").value), err = $("loginErr");
+  if (!r.ok) { err.textContent = r.msg; err.classList.add("on"); return; }
+  if (r.user.rol !== "sup") { err.textContent = "Este panel es solo para el perfil de supervisión."; err.classList.add("on"); return; }
+  err.classList.remove("on"); Sesion.guardar(r.user); abrir(r.user);
+}
+function salir() { Sesion.cerrar(); location.reload(); }
+
+async function abrir(s) {
+  $("pLogin").style.display = "none";
+  $("cabecera").style.display = "block";
+  $("panel").style.display = "block";
+  $("usrNom").textContent = s.nom;
+  armarFiltros();
+  await recargar();
+}
+
+function armarFiltros() {
+  $("fCorte").innerHTML = `<option value="todos">Todos los cortes</option>` +
+    CORTES.map(c => `<option value="${c.n}">Corte ${c.n} · ${c.et}</option>`).join("");
+  $("fMercado").innerHTML = `<option value="todos">Todos los mercados</option>` +
+    [...new Set(CLIENTES.map(c => c.mercado))].map(m => `<option>${esc(m)}</option>`).join("");
+  $("fMerc").innerHTML = `<option value="todos">Todo el equipo</option>` +
+    USUARIOS.filter(u => u.rol === "merc").map(u => `<option>${esc(u.nom)}</option>`).join("");
+  $("fMarca").innerHTML = `<option value="todos">Todas las marcas</option>` +
+    [...new Set(SKUS.map(s => s.m))].sort().map(m => `<option>${esc(m)}</option>`).join("");
+  ["fCorte", "fMercado", "fMerc", "fMarca"].forEach(id => $(id).addEventListener("change", pintar));
+}
+
+async function recargar() {
+  $("estado").textContent = "Cargando…";
+  try {
+    D.regs = await DB.listar();
+    $("estado").textContent = D.regs.length + " registros";
+  } catch (e) { $("estado").textContent = "sin conexión"; }
+  pintar();
+}
+
+/* ---------- filtros ---------- */
+function filtro() {
+  return { corte: $("fCorte").value, mercado: $("fMercado").value, merc: $("fMerc").value, marca: $("fMarca").value };
+}
+function registros() {
+  const f = filtro();
+  let r = D.regs.slice();
+  if (f.corte !== "todos") r = r.filter(x => Number(x.corte) === Number(f.corte));
+  if (f.mercado !== "todos") r = r.filter(x => x.mercado === f.mercado);
+  if (f.merc !== "todos") r = r.filter(x => x.usuario === f.merc);
+  if (f.marca !== "todos") r = r.map(x => ({ ...x, items: (x.items || []).filter(i => i.m === f.marca) }));
+  return r.sort((a, b) => (b.iso || "").localeCompare(a.iso || ""));
+}
+function universo() {
+  const f = filtro();
+  return carteraDe(f.merc).filter(c => f.mercado === "todos" || c.mercado === f.mercado);
+}
+function cortes() {
+  const f = filtro();
+  return f.corte === "todos" ? CORTES : CORTES.filter(c => c.n === Number(f.corte));
+}
+
+/* ---------- cálculo central ---------- */
+function calcular() {
+  const regs = registros(), cls = universo(), cts = cortes();
+  let opor = 0, ok = 0, noStock = 0, sinBol = 0, parc = 0;
+  const porCorte = [], porPdv = [];
+  cts.forEach(c => {
+    const delCorte = regs.filter(r => Number(r.corte) === c.n);
+    let a = 0, b = 0, s = 0, p = 0;
+    cls.forEach(cl => {
+      const e = resumenPDV(delCorte, cl, c);
+      if (e.relevado) { a++; if (e.sinBoleta) s++; }
+      else if (e.bloqueado) b++; else if (e.parcial) p++;
+      porPdv.push({ corte: c, cl, e });
+    });
+    opor += cls.length; ok += a; noStock += b; sinBol += s; parc += p;
+    porCorte.push({
+      c, ok: a, no: b, pend: cls.length - a - b - p, parc: p, total: cls.length,
+      compra: delCorte.filter(r => r.tipo === "boleta" && r.estado === "OK")
+        .reduce((x, r) => x + (r.items || []).reduce((y, i) => y + Number(i.monto || 0), 0), 0)
+    });
+  });
+
+  const stock = regs.filter(r => r.tipo === "stock" && r.estado === "OK");
+  const undDe = u => stock.filter(r => r.ubicacion === u)
+    .reduce((a, r) => a + (r.items || []).reduce((x, i) => x + Number(i.cant || 0), 0), 0);
+  const undAlm = undDe("ALMACEN"), undExh = undDe("EXHIBICION");
+  const bol = regs.filter(r => r.tipo === "boleta" && r.estado === "OK");
+  const und = stock.reduce((a, r) => a + (r.items || []).reduce((x, i) => x + Number(i.cant || 0), 0), 0);
+  const undBol = bol.reduce((a, r) => a + (r.items || []).reduce((x, i) => x + Number(i.cant || 0), 0), 0);
+  const compra = bol.reduce((a, r) => a + (r.items || []).reduce((x, i) => x + Number(i.monto || 0), 0), 0);
+  return { regs, cls, cts, opor, ok, noStock, sinBol, parc, porCorte, porPdv, stock, bol,
+           und, undAlm, undExh, undBol, compra };
+}
+
+/* ---------- agregados por SKU ---------- */
+function porSKU(regs) {
+  const m = {};
+  regs.forEach(r => (r.items || []).forEach(i => {
+    const k = i.n;
+    const o = m[k] = m[k] || { n: i.n, m: i.m, und: 0, alm: 0, exh: 0, sol: 0, undBol: 0, pdv: new Set(), lotes: new Set(), venc: [], lineas: 0 };
+    o.lineas++;
+    o.pdv.add(r.pdv);
+    if (r.tipo === "stock") {
+      const q = Number(i.cant || 0); o.und += q;
+      if (r.ubicacion === "EXHIBICION") o.exh += q; else o.alm += q;
+      if (i.lote) o.lotes.add(i.lote); if (i.vence) o.venc.push(i.vence);
+    }
+    else { o.undBol += Number(i.cant || 0); o.sol += Number(i.monto || 0); }
+  }));
+  return Object.values(m);
+}
+
+/* ---------- navegación ---------- */
+function verVista(v) {
+  D.vista = v; D.abierto = null;
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.v === v));
+  pintar();
+}
+function pintar() {
+  const c = calcular();
+  pintarKPIs(c);
+  const cont = $("contenido");
+  if (D.vista === "resumen") cont.innerHTML = vistaResumen(c);
+  else if (D.vista === "sku") cont.innerHTML = vistaSKU(c);
+  else if (D.vista === "registros") cont.innerHTML = vistaRegistros(c);
+  else if (D.vista === "fotos") cont.innerHTML = vistaFotos(c);
+  else cont.innerHTML = vistaAlertas(c);
+}
+
+function pintarKPIs(c) {
+  const pct = c.opor ? Math.round(c.ok / c.opor * 100) : 0;
+  $("kpis").innerHTML = `
+    <div class="k"><div class="e">Cobertura</div><div class="v">${pct}%</div><div class="s">${c.ok} de ${c.opor} oportunidades</div></div>
+    <div class="k alerta"><div class="e">Sin acceso al stock</div><div class="v">${c.noStock}</div><div class="s">con motivo registrado</div></div>
+    <div class="k ambar"><div class="e">PDV sin boletas</div><div class="v">${c.sinBol}</div><div class="s">visitados, sin compra</div></div>
+    <div class="k ambar"><div class="e">Pendientes</div><div class="v">${c.opor - c.ok - c.noStock}</div><div class="s">${c.parc} parciales</div></div>
+    <div class="k"><div class="e">UND en almacén</div><div class="v">${miles(c.undAlm)}</div><div class="s">stock guardado</div></div>
+    <div class="k"><div class="e">UND en exhibición</div><div class="v">${miles(c.undExh)}</div><div class="s">${c.und ? Math.round(c.undExh / c.und * 100) : 0}% del stock total</div></div>
+    <div class="k"><div class="e">Compra relevada</div><div class="v" style="font-size:21px">${soles(c.compra)}</div><div class="s">${miles(c.undBol)} UND en ${c.bol.length} boleta(s)</div></div>`;
+}
+
+/* ═══════════ VISTA: RESUMEN ═══════════ */
+function vistaResumen(c) {
+  const barras = c.porCorte.map(p => {
+    const t = p.total || 1;
+    return `<div style="flex:1;min-width:52px;text-align:center">
+      <div style="height:120px;display:flex;flex-direction:column;justify-content:flex-end;gap:1px">
+        <div style="height:${p.pend / t * 120}px;background:var(--linea)"></div>
+        <div style="height:${p.parc / t * 120}px;background:var(--ambar)"></div>
+        <div style="height:${p.no / t * 120}px;background:var(--vino)"></div>
+        <div style="height:${p.ok / t * 120}px;background:var(--verde)"></div>
+      </div>
+      <div style="font-size:11px;font-weight:800;margin-top:5px" class="num">${Math.round(p.ok / t * 100)}%</div>
+      <div style="font-size:10px;color:var(--gris)">C${p.c.n}</div></div>`;
+  }).join("");
+
+  const equipo = USUARIOS.filter(u => u.rol === "merc").map(u => {
+    const cart = carteraDe(u.nom).filter(x => filtro().mercado === "todos" || x.mercado === filtro().mercado);
+    const rs = c.regs.filter(r => r.usuario === u.nom);
+    let ok = 0, no = 0, sb = 0;
+    c.cts.forEach(ct => cart.forEach(cl => {
+      const e = resumenPDV(rs.filter(r => Number(r.corte) === ct.n), cl, ct);
+      if (e.relevado) { ok++; if (e.sinBoleta) sb++; } else if (e.bloqueado) no++;
+    }));
+    const opor = cart.length * c.cts.length;
+    const und = rs.filter(r => r.tipo === "stock" && r.estado === "OK").reduce((a, r) => a + (r.items || []).reduce((x, i) => x + Number(i.cant || 0), 0), 0);
+    const sol = rs.filter(r => r.tipo === "boleta" && r.estado === "OK").reduce((a, r) => a + (r.items || []).reduce((x, i) => x + Number(i.monto || 0), 0), 0);
+    return `<tr><td><b>${esc(u.nom)}</b><br><span class="tenue">${cart.length} PDV asignados</span></td>
+      <td class="n">${ok}/${opor}<br><span class="tenue">${opor ? Math.round(ok / opor * 100) : 0}%</span></td>
+      <td class="n" style="${no ? 'color:var(--vino)' : ''}">${no}</td><td class="n">${sb}</td>
+      <td class="n">${miles(und)}</td><td class="n">${sol ? soles(sol) : "—"}</td></tr>`;
+  }).join("");
+
+  const mercados = [...new Set(universo().map(x => x.mercado))].map(m => {
+    const cls = universo().filter(x => x.mercado === m);
+    let ok = 0, tot = 0;
+    c.cts.forEach(ct => cls.forEach(cl => {
+      tot++; if (resumenPDV(c.regs.filter(r => Number(r.corte) === ct.n), cl, ct).relevado) ok++;
+    }));
+    return { m, ok, tot, pct: tot ? Math.round(ok / tot * 100) : 0, pdv: cls.length };
+  }).sort((a, b) => b.pct - a.pct);
+
+  return `
+  <div class="panelc">
+    <h3>Cobertura por corte</h3><div class="sub">Cada barra es el 100% de los PDV del filtro.</div>
+    <div style="display:flex;gap:5px;align-items:flex-end">${barras || '<div class="vacio">Sin datos.</div>'}</div>
+    <div class="leyenda"><span><i style="background:var(--verde)"></i>Relevado</span>
+      <span><i style="background:var(--vino)"></i>Sin acceso</span>
+      <span><i style="background:var(--ambar)"></i>Parcial</span>
+      <span><i style="background:var(--linea)"></i>Sin visitar</span></div>
+  </div>
+
+  <div class="panelc">
+    <h3>Desempeño del equipo</h3><div class="sub">Cobertura sobre la cartera asignada de cada una.</div>
+    <div class="tabla-wrap"><table class="tb">
+      <tr><th>Mercaderista</th><th class="n">Cobertura</th><th class="n">Sin acceso</th><th class="n">Sin boletas</th><th class="n">UND stock</th><th class="n">Compra S/</th></tr>
+      ${equipo}</table></div>
+  </div>
+
+  <div class="panelc">
+    <h3>Cobertura por mercado</h3>
+    <div class="tabla-wrap"><table class="tb">
+      <tr><th>Mercado</th><th class="n">PDV</th><th class="n">Relevados</th><th class="n">%</th><th style="width:34%">Avance</th></tr>
+      ${mercados.map(f => `<tr><td>${esc(f.m)}</td><td class="n">${f.pdv}</td><td class="n">${f.ok}/${f.tot}</td>
+        <td class="n">${f.pct}%</td>
+        <td><div class="tr"><i style="width:${f.pct}%;${f.pct < 60 ? 'background:var(--vino)' : ''}"></i></div></td></tr>`).join("")}
+    </table></div>
+  </div>
+
+  <div class="panelc">
+    <h3>Estado PDV por corte</h3><div class="sub">Cada celda es una oportunidad de relevo.</div>
+    <div class="tabla-wrap"><table class="tb">
+      <tr><th>PDV</th><th>Mercaderista</th>${c.cts.map(x => `<th class="n">C${x.n}</th>`).join("")}</tr>
+      ${universo().map(cl => `<tr>
+        <td><b>${esc(cl.nombre)}</b><br><span class="tenue">${esc(cl.mercado)} · ${esc(cl.id)}</span></td>
+        <td class="tenue">${esc(cl.merc)}</td>
+        ${c.cts.map(ct => {
+          const e = resumenPDV(c.regs.filter(r => Number(r.corte) === ct.n), cl, ct);
+          const col = e.relevado ? "var(--verde)" : e.bloqueado ? "var(--vino)" : e.parcial ? "var(--ambar)" : "var(--linea)";
+          const tx = e.relevado ? (e.sinBoleta ? "✓*" : "✓") : e.bloqueado ? "✕" : e.parcial ? "!" : "·";
+          return `<td class="n"><span class="celda" style="background:${col}">${tx}</span></td>`;
+        }).join("")}</tr>`).join("")}
+    </table></div>
+    <div class="leyenda"><span>✓ relevado</span><span>✓* relevado, sin boletas</span><span>✕ sin acceso al stock</span><span>! parcial</span><span>· sin visitar</span></div>
+  </div>`;
+}
+
+/* ═══════════ VISTA: SKU ═══════════ */
+function ordenarSKU(x) { D.ordenSKU = x; pintar(); }
+function vistaSKU(c) {
+  let lista = porSKU(c.regs);
+  const orden = { und: (a, b) => b.und - a.und, sol: (a, b) => b.sol - a.sol,
+    pdv: (a, b) => b.pdv.size - a.pdv.size, nombre: (a, b) => a.n.localeCompare(b.n) };
+  lista.sort(orden[D.ordenSKU]);
+  if (!lista.length) return `<div class="panelc"><div class="vacio">Sin líneas de producto para este filtro.</div></div>`;
+
+  const marcas = {};
+  lista.forEach(s => {
+    const o = marcas[s.m] = marcas[s.m] || { und: 0, sol: 0, skus: 0 };
+    o.und += s.und; o.alm = (o.alm||0) + s.alm; o.exh = (o.exh||0) + s.exh; o.sol += s.sol; o.skus++;
+  });
+  const totUnd = Object.values(marcas).reduce((a, b) => a + b.und, 0) || 1;
+
+  return `
+  <div class="panelc">
+    <h3>Participación por marca</h3>
+    <div class="tabla-wrap"><table class="tb">
+      <tr><th>Marca</th><th class="n">SKU</th><th class="n">Almacén</th><th class="n">Exhibición</th><th class="n">Total</th><th class="n">%</th><th class="n">Compra S/</th><th style="width:20%"></th></tr>
+      ${Object.entries(marcas).sort((a, b) => b[1].und - a[1].und).map(([m, o]) => `<tr>
+        <td><b>${esc(m)}</b></td><td class="n">${o.skus}</td><td class="n">${miles(o.alm || 0)}</td><td class="n">${miles(o.exh || 0)}</td><td class="n">${miles(o.und)}</td>
+        <td class="n">${Math.round(o.und / totUnd * 100)}%</td><td class="n">${o.sol ? soles(o.sol) : "—"}</td>
+        <td><div class="tr"><i style="width:${o.und / totUnd * 100}%"></i></div></td></tr>`).join("")}
+    </table></div>
+  </div>
+
+  <div class="panelc">
+    <h3>Detalle por SKU <span class="tenue" style="font-weight:400">(${lista.length})</span></h3>
+    <div class="sub">Ordenar por:
+      ${[["und", "Unidades"], ["sol", "Soles"], ["pdv", "N° de PDV"], ["nombre", "Nombre"]]
+        .map(([k, t]) => `<button class="mini ${D.ordenSKU === k ? "on" : ""}" onclick="ordenarSKU('${k}')">${t}</button>`).join("")}
+    </div>
+    <div class="tabla-wrap"><table class="tb">
+      <tr><th style="min-width:250px">SKU</th><th>Marca</th><th class="n">Almacén</th><th class="n">Exhibición</th>
+        <th class="n">UND boleta</th><th class="n">Compra S/</th><th class="n">PDV</th><th>Lotes</th><th class="n">Vence más próximo</th></tr>
+      ${lista.map(s => {
+        const v = s.venc.slice().sort()[0];
+        const m = v ? mesesHasta(v) : null;
+        return `<tr>
+          <td class="wrap"><b>${esc(s.n)}</b></td>
+          <td class="tenue">${esc(s.m)}</td>
+          <td class="n">${s.alm ? miles(s.alm) : "—"}</td>
+          <td class="n">${s.exh ? miles(s.exh) : "—"}</td>
+          <td class="n">${s.undBol ? miles(s.undBol) : "—"}</td>
+          <td class="n">${s.sol ? soles(s.sol) : "—"}</td>
+          <td class="n">${s.pdv.size}</td>
+          <td class="wrap tenue" style="font-size:11px">${[...s.lotes].join(", ") || "—"}</td>
+          <td class="n" style="${m !== null && m < 6 ? "color:var(--vino);font-weight:800" : ""}">${v ? fechaCorta(v) + (m !== null && m < 6 ? " ⚠" : "") : "—"}</td>
+        </tr>`;
+      }).join("")}
+    </table></div>
+  </div>`;
+}
+
+/* ═══════════ VISTA: REGISTROS ═══════════ */
+function abrirReg(id) { D.abierto = D.abierto === id ? null : id; pintar(); }
+function vistaRegistros(c) {
+  if (!c.regs.length) return `<div class="panelc"><div class="vacio">Sin registros para este filtro.</div></div>`;
+  return `<div class="panelc">
+    <h3>Registros <span class="tenue" style="font-weight:400">(${c.regs.length})</span></h3>
+    <div class="sub">Toca una fila para ver el detalle completo, las fotos y la ubicación.</div>
+    ${c.regs.map(r => {
+      const und = (r.items || []).reduce((a, i) => a + Number(i.cant || 0), 0);
+      const sol = (r.items || []).reduce((a, i) => a + Number(i.monto || 0), 0);
+      const ab = D.abierto === r.id;
+      return `<div class="reg ${r.estado === "NO" ? "no" : ""}" onclick="abrirReg('${r.id}')">
+        <div class="rh">
+          <span class="pill ${r.estado === "NO" ? "no" : ""}">${r.tipo === "stock" ? "Stock" + (r.ubicacion ? " · " + ubic(r.ubicacion).et : "") : "Boleta"}${r.estado === "NO" ? " · no ejec." : ""}</span>
+          <b>${esc(r.cliente)}</b>
+          <span class="tenue" style="margin-left:auto;white-space:nowrap">C${r.corte} · ${esc(r.fecha)} ${esc(r.hora)}</span>
+        </div>
+        <div class="tenue" style="font-size:11.5px;margin-top:3px">
+          ${esc(r.mercado)} · ${esc(r.usuario)} · ${(r.items || []).length} SKU
+          ${und ? " · " + miles(und) + " UND" : ""}${sol ? " · " + soles(sol) : ""}
+          ${r.nFotos ? " · " + r.nFotos + " foto(s)" : ""}
+        </div>
+        ${ab ? detalleReg(r) : ""}
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+function detalleReg(r) {
+  const fotos = (r.fotos || []).filter(u => u.indexOf("http") === 0);
+  return `<div class="det" onclick="event.stopPropagation()">
+    ${r.estado === "NO" ? `<div class="motivo"><b>${esc(r.motivo)}</b><br>${esc(r.detalle)}</div>` : ""}
+    ${(r.items || []).length ? `<div class="tabla-wrap"><table class="tb">
+      <tr><th style="min-width:230px">SKU</th><th>Marca</th><th class="n">UND</th>
+      ${r.tipo === "boleta" ? '<th class="n">S/</th><th class="n">PU</th>' : '<th>Lote</th><th class="n">Vence</th>'}</tr>
+      ${(r.items || []).map(i => `<tr><td class="wrap">${esc(i.n)}</td><td class="tenue">${esc(i.m)}</td>
+        <td class="n">${miles(i.cant)}</td>
+        ${r.tipo === "boleta"
+          ? `<td class="n">${soles(i.monto)}</td><td class="n tenue">${soles(i.monto / (i.cant || 1))}</td>`
+          : `<td>${esc(i.lote || "—")}</td><td class="n">${i.vence ? fechaCorta(i.vence) : "—"}</td>`}
+      </tr>`).join("")}</table></div>` : ""}
+    <div class="meta">
+      <span>PDV ${esc(r.pdv)}</span>
+      ${r.numBoleta ? `<span>Boleta ${esc(r.numBoleta)}</span>` : ""}
+      ${r.lat ? `<span><a href="https://www.google.com/maps?q=${r.lat},${r.lng}" target="_blank" rel="noopener">📍 Ver ubicación</a></span>` : "<span>Sin GPS</span>"}
+    </div>
+    ${(r.thumbs || []).length || fotos.length ? `<div class="galeria">${galeria(r, fotos)}</div>
+      <div class="tenue" style="font-size:11px;margin-top:5px">Toca una miniatura para abrir la foto completa en Drive.</div>` : ""}
+  </div>`;
+}
+
+/* miniaturas si las hay; si no, botones directos a Drive */
+function galeria(r, fotos) {
+  const th = r.thumbs || [];
+  const n = Math.max(th.length, fotos.length);
+  let salida = "";
+  for (let k = 0; k < n; k++) {
+    if (th[k] && fotos[k]) salida += `<a href="${fotos[k]}" target="_blank" rel="noopener"><img src="${th[k]}"></a>`;
+    else if (th[k]) salida += `<img src="${th[k]}">`;
+    else salida += `<a class="sinmini" href="${fotos[k]}" target="_blank" rel="noopener">🖼<span>Ver foto ${k + 1}</span></a>`;
+  }
+  return salida;
+}
+
+/* ═══════════ VISTA: FOTOS ═══════════ */
+function vistaFotos(c) {
+  const conFoto = c.regs.filter(r => (r.thumbs || []).length || (r.fotos || []).some(u => u.indexOf("http") === 0));
+  if (!conFoto.length) return `<div class="panelc"><div class="vacio">No hay fotos para este filtro.</div></div>`;
+  let n = 0; conFoto.forEach(r => n += Math.max((r.thumbs || []).length, (r.fotos || []).filter(u => u.indexOf("http") === 0).length));
+  return `<div class="panelc">
+    <h3>Galería de evidencias <span class="tenue" style="font-weight:400">(${n})</span></h3>
+    <div class="sub">Agrupadas por visita. Toca una foto para abrirla en tamaño real desde Drive.</div>
+    ${conFoto.map(r => {
+      const fotos = (r.fotos || []).filter(u => u.indexOf("http") === 0);
+      return `<div class="grupofoto">
+        <div class="gh"><span class="pill ${r.estado === "NO" ? "no" : ""}">${r.tipo === "stock" ? ubic(r.ubicacion).corto : "Boleta"}</span>
+          <b>${esc(r.cliente)}</b>
+          <span class="tenue" style="margin-left:auto">C${r.corte} · ${esc(r.fecha)} ${esc(r.hora)} · ${esc(r.usuario)}</span></div>
+        <div class="galeria">${galeria(r, fotos)}</div>
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
+/* ═══════════ VISTA: ALERTAS ═══════════ */
+function vistaAlertas(c) {
+  const venc = [];
+  c.stock.forEach(r => (r.items || []).forEach(i => {
+    const m = mesesHasta(i.vence);
+    if (m !== null && m < 9) venc.push({ ...i, r, m });
+  }));
+  venc.sort((a, b) => a.m - b.m);
+
+  const no = c.regs.filter(r => r.estado === "NO");
+  const agr = {};
+  no.forEach(r => { const k = (r.tipo === "stock" ? "Stock · " : "Boleta · ") + r.motivo; agr[k] = (agr[k] || 0) + 1; });
+
+  const pend = c.porPdv.filter(x => !x.e.relevado && !x.e.bloqueado);
+
+  return `
+  <div class="panelc">
+    <h3>Oportunidades pendientes <span class="tenue" style="font-weight:400">(${pend.length})</span></h3>
+    <div class="sub">PDV que aún no tienen relevo completo en el corte.</div>
+    ${pend.length ? `<div class="tabla-wrap"><table class="tb">
+      <tr><th>Corte</th><th>PDV</th><th>Mercado</th><th>Responsable</th><th>Estado</th></tr>
+      ${pend.map(x => `<tr><td class="n">C${x.corte.n}</td><td class="wrap"><b>${esc(x.cl.nombre)}</b></td>
+        <td class="tenue">${esc(x.cl.mercado)}</td><td class="tenue">${esc(x.cl.merc)}</td>
+        <td>${x.e.parcial ? '<span class="pill amb">Parcial</span>' : '<span class="pill gris">Sin visitar</span>'}</td></tr>`).join("")}
+    </table></div>` : `<div class="vacio">Sin pendientes. 👏</div>`}
+  </div>
+
+  <div class="panelc">
+    <h3>Motivos de no ejecución <span class="tenue" style="font-weight:400">(${no.length})</span></h3>
+    ${no.length ? `<div class="tabla-wrap"><table class="tb">
+      <tr><th>Motivo</th><th class="n">Casos</th></tr>
+      ${Object.entries(agr).sort((a, b) => b[1] - a[1]).map(([m, v]) => `<tr><td class="wrap">${esc(m)}</td><td class="n">${v}</td></tr>`).join("")}
+    </table></div>
+    <div class="tabla-wrap" style="margin-top:12px"><table class="tb">
+      <tr><th>Corte</th><th>PDV</th><th>Tipo</th><th style="min-width:260px">Detalle escrito</th><th>Mercaderista</th></tr>
+      ${no.map(r => `<tr><td class="n">C${r.corte}</td>
+        <td class="wrap"><b>${esc(r.cliente)}</b><br><span class="tenue">${esc(r.mercado)} · ${esc(r.fecha)}</span></td>
+        <td><span class="pill no">${r.tipo === "stock" ? "Stock" : "Boleta"}</span></td>
+        <td class="wrap"><b>${esc(r.motivo)}</b><br><span class="tenue">${esc(r.detalle)}</span></td>
+        <td class="tenue">${esc(r.usuario)}</td></tr>`).join("")}
+    </table></div>` : `<div class="vacio">Ningún caso de no ejecución.</div>`}
+  </div>
+
+  <div class="panelc">
+    <h3>Vencimientos próximos <span class="tenue" style="font-weight:400">(${venc.length})</span></h3>
+    <div class="sub">Lotes relevados con menos de 9 meses de vida útil.</div>
+    ${venc.length ? `<div class="tabla-wrap"><table class="tb">
+      <tr><th class="n">Vence</th><th class="n">Meses</th><th style="min-width:230px">SKU</th><th class="n">UND</th><th>Lote</th><th>PDV</th><th>Fecha relevo</th></tr>
+      ${venc.map(x => `<tr>
+        <td class="n" style="font-weight:800;color:${x.m < 3 ? "var(--vino)" : x.m < 6 ? "var(--ambar)" : "inherit"}">${fechaCorta(x.vence)}</td>
+        <td class="n">${x.m}</td><td class="wrap">${esc(x.n)}</td><td class="n">${miles(x.cant)}</td>
+        <td>${esc(x.lote || "—")}</td>
+        <td class="wrap">${esc(x.r.cliente)}<br><span class="tenue">${esc(x.r.mercado)}</span></td>
+        <td class="tenue">${esc(x.r.fecha)}</td></tr>`).join("")}
+    </table></div>` : `<div class="vacio">Ningún lote vence en los próximos 9 meses.</div>`}
+  </div>`;
+}
+
+/* ═══════════ EXPORTACIÓN A EXCEL ═══════════ */
+function exportarExcel() {
+  const c = calcular(), f = filtro();
+  const etiqueta = f.corte === "todos" ? "todos los cortes" : "corte " + f.corte;
+
+  const resumen = [
+    ["PILOTO EXHIBE Y GANA · Resumen"], [],
+    ["Generado", new Date().toLocaleString("es-PE")],
+    ["Alcance", etiqueta],
+    ["Mercado", f.mercado === "todos" ? "Todos" : f.mercado],
+    ["Mercaderista", f.merc === "todos" ? "Todo el equipo" : f.merc],
+    ["Marca", f.marca === "todos" ? "Todas" : f.marca], [],
+    ["Indicador", "Valor"],
+    ["Oportunidades (PDV x cortes)", c.opor],
+    ["PDV relevados", c.ok],
+    ["Cobertura %", c.opor ? Math.round(c.ok / c.opor * 100) : 0],
+    ["Sin acceso al stock", c.noStock],
+    ["PDV sin boletas", c.sinBol],
+    ["Parciales", c.parc],
+    ["Sin visitar", c.opor - c.ok - c.noStock - c.parc],
+    ["Unidades en almacén", c.undAlm],
+    ["Unidades en exhibición", c.undExh],
+    ["Unidades en stock (total)", c.und],
+    ["Unidades en boletas", c.undBol],
+    ["Compra relevada S/", Number(c.compra.toFixed(2))],
+    ["Boletas levantadas", c.bol.length]
+  ];
+
+  const cobertura = [["Corte", "Rango", "Tipo", "PDV", "Mercado", "Responsable", "Estado", "Stock", "Boletas"]];
+  c.porPdv.forEach(x => cobertura.push([x.corte.n, x.corte.et, ETIQ_TIPO[x.corte.tipo], x.cl.nombre, x.cl.mercado, x.cl.merc,
+    x.e.relevado ? (x.e.sinBoleta ? "Relevado (sin boletas)" : "Relevado")
+      : x.e.bloqueado ? "Sin acceso al stock" : x.e.parcial ? "Parcial" : "Sin visitar",
+    x.e.stock === "OK" ? "Almacén y exhibición" : x.e.stock === "NO" ? "No permitido"
+      : x.e.almacen ? "Solo almacén" : x.e.exhibicion ? "Solo exhibición" : "—",
+    x.corte.tipo === "STOCK" ? "No aplica" : x.e.boleta === "OK" ? "Sí" : x.e.boleta === "NO" ? "Sin boletas" : "—"]));
+
+  const registros = [["ID", "Corte", "Tipo", "Estado", "Motivo", "Detalle", "Fecha", "Hora", "Mercaderista",
+    "PDV", "Cliente", "Mercado", "Ubicacion", "N° boleta", "SKU distintos", "Unidades", "Importe S/", "Fotos", "Latitud", "Longitud"]];
+  c.regs.forEach(r => registros.push([r.id, Number(r.corte), r.tipo === "stock" ? "Stock" : "Boleta",
+    r.estado === "OK" ? "Ejecutado" : "No ejecutado", r.motivo || "", r.detalle || "", r.fecha, r.hora, r.usuario,
+    r.pdv, r.cliente, r.mercado, r.ubicacion ? ubic(r.ubicacion).et : "", r.numBoleta || "", (r.items || []).length,
+    (r.items || []).reduce((a, i) => a + Number(i.cant || 0), 0),
+    Number((r.items || []).reduce((a, i) => a + Number(i.monto || 0), 0).toFixed(2)),
+    Number(r.nFotos || 0), r.lat || "", r.lng || ""]));
+
+  const detalle = [["Corte", "Fecha", "Tipo", "Ubicacion", "Mercaderista", "PDV", "Cliente", "Mercado",
+    "SKU", "Marca", "Unidades", "Importe S/", "Lote", "Vencimiento", "Meses para vencer"]];
+  c.regs.forEach(r => (r.items || []).forEach(i => detalle.push([Number(r.corte), r.fecha,
+    r.tipo === "stock" ? "Stock" : "Boleta", r.ubicacion ? ubic(r.ubicacion).et : "",
+    r.usuario, r.pdv, r.cliente, r.mercado, i.n, i.m, Number(i.cant || 0), i.monto != null ? Number(Number(i.monto).toFixed(2)) : "",
+    i.lote || "", i.vence ? fechaCorta(i.vence) : "", i.vence ? mesesHasta(i.vence) : ""])));
+
+  const sku = [["SKU", "Marca", "UND almacen", "UND exhibicion", "UND stock total", "UND boletas", "Compra S/", "N° de PDV", "Líneas", "Lotes", "Vence más próximo"]];
+  porSKU(c.regs).sort((a, b) => b.und - a.und).forEach(s => sku.push([s.n, s.m, s.alm, s.exh, s.und, s.undBol,
+    Number(s.sol.toFixed(2)), s.pdv.size, s.lineas, [...s.lotes].join(", "),
+    s.venc.length ? fechaCorta(s.venc.slice().sort()[0]) : ""]));
+
+  const motivos = [["Corte", "Fecha", "Tipo", "PDV", "Cliente", "Mercado", "Mercaderista", "Motivo", "Detalle escrito"]];
+  c.regs.filter(r => r.estado === "NO").forEach(r => motivos.push([Number(r.corte), r.fecha,
+    r.tipo === "stock" ? "Stock" : "Boleta", r.pdv, r.cliente, r.mercado, r.usuario, r.motivo, r.detalle]));
+
+  const fotos = [["Corte", "Fecha", "Hora", "Tipo", "PDV", "Cliente", "Mercaderista", "Enlace a la foto"]];
+  c.regs.forEach(r => (r.fotos || []).filter(u => u.indexOf("http") === 0).forEach(u =>
+    fotos.push([Number(r.corte), r.fecha, r.hora, r.tipo === "stock" ? "Stock" : "Boleta",
+      r.pdv, r.cliente, r.usuario, u])));
+
+  XLSX.descargar(`exhibe-y-gana_${etiqueta.replace(/\s+/g, "-")}.xlsx`, [
+    { nombre: "Resumen", filas: resumen },
+    { nombre: "Cobertura PDV", filas: cobertura },
+    { nombre: "Registros", filas: registros },
+    { nombre: "Detalle SKU", filas: detalle },
+    { nombre: "Ranking SKU", filas: sku },
+    { nombre: "No ejecucion", filas: motivos },
+    { nombre: "Fotos", filas: fotos }
+  ]);
+  toast("Excel descargado ✔ <b>7 hojas</b>");
+}
+
+</script>
+</body>
+</html>
